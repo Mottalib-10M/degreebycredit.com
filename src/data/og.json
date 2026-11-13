@@ -1,0 +1,13 @@
+{
+ "accent": "#1D4E89",
+ "symbol": "CR",
+ "variants": [
+  {
+   "file": "og-en.png",
+   "title": "Online degree cost 2026\nper credit, per school, per state",
+   "subtitle": "$/credit · fully online students · award rate · accreditor · FAFSA",
+   "badge": "IPEDS 2023-24 · College Scorecard, November 2026",
+   "brand": "Degree by Credit"
+  }
+ ]
+}

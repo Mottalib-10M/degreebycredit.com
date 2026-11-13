@@ -1,0 +1,53 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema, articleSchema } from '../../lib/seo';
+import { displayDate } from '../../lib/format';
+import { P, type SourceKey } from '../../lib/engine/params';
+import { helpers } from '../../lib/helpers';
+const lang = 'en';
+const h = helpers(true);
+const { N, m, num, pc } = h;
+const L = (k: SourceKey, t?: string) => `<a href="${P.sources[k].url}" target="_blank" rel="nofollow noopener">${t ?? P.sources[k].label.en}</a>`;
+---
+<PageLayout title="Degree by Credit Method: IPEDS and Scorecard Files, Limits" description="How Degree by Credit turns the federal IPEDS and College Scorecard files into prices per credit, degree totals and award rates, and what the files leave out." lang={lang} jsonLd={[articleSchema({ title: 'How the figures are built', description: 'Method of Degree by Credit', path: route('method', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Method', path: route('method', lang) }])]} breadcrumbs={[{ label: 'Method' }]}>
+  <header class="mb-6"><p class="kicker">Method</p><h1 class="mt-1 text-3xl font-bold text-navy-900 md:text-4xl">Degree by Credit method: the files, the rules and the limits</h1></header>
+  <div class="prose prose-slate max-w-none">
+    <p>Every table and calculator on Degree by Credit is built from public federal files, downloaded on {displayDate(P.retrieved_at, 'en-US')} without an account or a key, and processed by one script, <code>scripts/build-data.py</code>, which can be run again from scratch. The calculators call one engine of pure functions, tested on every build. No figure is typed into a page. The files are rebuilt by hand when the Department of Education publishes new ones; nothing is fetched while you read, and no update schedule is promised.</p>
+
+    <h2>The files</h2>
+    <ul>
+      <li><strong>IPEDS directory, {P.ipeds.headerFile}</strong> (<Fragment set:html={L('ipeds_hd')} />): name, state, sector, level, category and Title IV status of each college.</li>
+      <li><strong>IPEDS charges, {P.ipeds.chargesFile}</strong> (<Fragment set:html={L('ipeds_ic_ay')} />): per-credit charges for part-time undergraduates and graduates (district, state and out-of-state), full-time tuition and required fees, academic year {P.ipeds.chargesYear}. Variable definitions in <Fragment set:html={L('ipeds_ic_ay_dict')} />.</li>
+      <li><strong>IPEDS distance education, {P.ipeds.distanceFile}</strong> (<Fragment set:html={L('ipeds_ef_dist')} />): students enrolled exclusively, partly or not at all in distance education, {P.ipeds.enrollmentTerm}.</li>
+      <li><strong>College Scorecard, most recent cohorts institution file</strong>, released {displayDate(P.scorecard.release, 'en-US')} (<Fragment set:html={L('scorecard_data')} />): accreditor (as of {displayDate(P.scorecard.accreditorAsOf, 'en-US')}), eight-year award rate of students who entered in {P.scorecard.awardCohort}, Pell share and average net price ({P.scorecard.pellYear}), median debt ({P.scorecard.debtYears}) and median earnings ({P.scorecard.earningsNote}). Cohort years from <Fragment set:html={L('scorecard_dict')} />.</li>
+    </ul>
+    <p>{P.ipeds.nextFilesStatus}.</p>
+
+    <h2>Which colleges are counted</h2>
+    <p>A college is counted when the directory lists it in the 50 states or the District of Columbia, as degree-granting, active and taking part in the federal student aid programs (Title IV). That gives {num(N.n)} colleges. Tables about online study keep the {num(N.nOnline)} with at least 50 students enrolled exclusively in distance education; the cheapest lists ask for 500. “Fully online students” are those the college reports as enrolled exclusively in distance education courses.</p>
+
+    <h2>Prices</h2>
+    <p>The price per credit is the in-state charge for part-time undergraduates (HRCHG2) unless a page says otherwise; out-of-state is HRCHG3, district HRCHG1, graduate HRCHG6 and HRCHG7. A charge of zero or less is treated as not reported. Required fees are reported per year for a full-time student; to compare colleges on one figure, the “price per credit with fees” adds a thirtieth of the yearly fees to the per-credit charge, 30 credits being a full-time year. Colleges that charge a flat price per term report no per-credit charge: they are left out of per-credit rankings, and where they appear (Western Governors University, for example) their flat yearly tuition is used at 30 credits a year.</p>
+    <p>Medians are taken over the colleges of each group that report the field: {num(N.nPub4)} public four-year colleges, {num(N.nPub2)} public two-year colleges, {num(N.nNpf4)} private nonprofit and {num(N.nFp4)} for-profit four-year colleges. The percentile list used by the budget calculator covers the {num(N.nQ)} colleges with 50 or more fully online students that report an in-state charge.</p>
+
+    <h2>Calculator rules</h2>
+    <p>Credits left = credits of the program − accepted transfer credits. Tuition = credits left × price per credit. Years = credits left ÷ (credits per term × terms per year), and fees are counted for each year started, rounded up to the half year. Grants are subtracted per year, never below zero. Program lengths ({P.credits.associate} credits for an associate degree, {P.credits.bachelor} for a bachelor’s, {P.credits.master} for a master’s) are starting values the reader changes, not data.</p>
+
+    <h2>Completion</h2>
+    <p>The award rate is the College Scorecard measure OMAWDP8_ALL: the share of all students who entered in {P.scorecard.awardCohort}, first-time or transfer, full-time or part-time, who received an award from the college within eight years. It is wider than the older graduation rate, which follows first-time full-time students only. Medians: {pc(N.medOm8Online, 0)} at colleges where at least half the students are fully online ({num(N.nOm8Online)} colleges), {pc(N.medOm8Campus, 0)} where fewer than a quarter are ({num(N.nOm8Campus)}).</p>
+
+    <h2>Tests</h2>
+    <p>Run on every build: degree totals recomputed by hand for a bachelor’s with and without transfer credits; fees counted by the half year; grants capped at the gross cost; the out-of-state gap; the budget-to-price formula; the percentile reading at both ends; the associate-then-bachelor route; flat-rate tuition. A failing test stops the build.</p>
+
+    <h2>What Degree by Credit leaves out</h2>
+    <ul>
+      <li>a separate online rate, when a college bills online programs differently from what it reports to IPEDS;</li>
+      <li>program fees (nursing, engineering, education), books, software, proctored exams and graduation fees;</li>
+      <li>tuition changes after {P.ipeds.chargesYear};</li>
+      <li>transfer policies, which each college sets;</li>
+      <li>the quality of teaching or of a program, which no federal file measures.</li>
+    </ul>
+    <p>Licences: IPEDS data are published by NCES in the public domain (<Fragment set:html={L('nces_policy')} />); the citation asked for is “{P.nces.citation}”. College Scorecard data are used under CC BY 4.0 with attribution in the footer of every page. Median price at public universities for state residents, for reference: {m(N.medPub4)} a credit.</p>
+  </div>
+</PageLayout>

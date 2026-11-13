@@ -1,0 +1,20 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { SITE_URL } from '../../data/site-config';
+import { route } from '../../i18n/routes';
+import { breadcrumbSchema } from '../../lib/seo';
+const lang = 'en';
+const code = `<iframe src="${SITE_URL}/embed/degree-cost-calculator/" title="Online degree cost calculator" width="100%" height="760" style="border:0;max-width:900px" loading="lazy"></iframe>`;
+---
+<PageLayout title="Embed the online degree cost calculator on your own site" description="Show the online degree cost calculator on your site for free: one iframe, prices per credit from the federal IPEDS file, transfer credits, pace and grants, no sign-up." lang={lang} noindex={true} jsonLd={[breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'Embed', path: route('widget', lang) }])]} breadcrumbs={[{ label: 'Embed' }]} showAuthor={false}>
+  <header class="mb-6">
+    <h1 class="text-3xl font-bold text-navy-900 md:text-4xl">Embed the online degree cost calculator</h1>
+    <p class="mt-3 text-lg text-navy-700">For a library, a workforce board, an employer’s tuition page or an article on going back to school: visitors pick a degree and a type of college, add their credits and grants, and see the total.</p>
+  </header>
+  <div class="prose prose-slate max-w-none">
+    <pre class="overflow-x-auto rounded-lg bg-navy-900 p-4 text-sm text-white"><code>{code}</code></pre>
+    <p>Conditions: keep the credit and source lines under the calculator visible and use it as it is, without warranty. When the federal files change and the site is rebuilt, the embedded calculator follows.</p>
+    <p>Nothing your visitors type reaches us and the frame sets no cookie. Questions: <a href={route('contact', lang)}>contact</a>.</p>
+  </div>
+  <div class="mt-8 overflow-hidden rounded-xl border border-navy-200"><iframe src="/embed/degree-cost-calculator/" title="Online degree cost calculator" width="100%" height="760" style="border:0" loading="lazy"></iframe></div>
+</PageLayout>

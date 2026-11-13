@@ -1,0 +1,22 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import LegalIdentity from '../../components/LegalIdentity.astro';
+import { CONTACT_EMAIL, LAST_UPDATED, SITE_NAMES } from '../../data/site-config';
+import { route } from '../../i18n/routes';
+const lang = 'en';
+---
+<PageLayout title={`Contact ${SITE_NAMES[lang]}: a price, a school, the widget`} description="Write to Degree by Credit when a price per credit, a school’s figure or a state table looks wrong, when new federal files are out, or to embed the calculator." lang={lang} noindex={true} breadcrumbs={[{ label: 'Contact' }]} showAuthor={false}>
+  <div class="prose prose-slate max-w-none">
+    <h1>Contact</h1>
+    <p>Email: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. A person reads every message.</p>
+    <h2>A figure looks wrong</h2>
+    <p>Send the page address, the figure and what you expected, with the source you rely on: the school’s tuition page, College Navigator or College Scorecard. We check the federal file, correct the build script or the engine if we made the mistake, and date the change. If the school reported a figure that differs from its own website, we say so on the page.</p>
+    <h2>What we cannot do</h2>
+    <p>We cannot advise you on a school, check your transcripts, estimate your aid or pass your details to a college. Those questions go to the school’s admissions or financial aid office. Please do not send transcripts, Social Security numbers or aid offers.</p>
+    <h2>Embedding the calculator</h2>
+    <p>Libraries, workforce boards, employers and writers can show the online degree cost calculator in an iframe at no cost. The code and the conditions are on the <a href={route('widget', lang)}>embed page</a>.</p>
+    <h2>Publisher</h2>
+    <LegalIdentity lang={lang} />
+    <p class="text-sm">Last updated: {LAST_UPDATED}.</p>
+  </div>
+</PageLayout>

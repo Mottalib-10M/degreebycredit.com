@@ -1,0 +1,26 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { AUTHOR_NAME, CONTACT_EMAIL, LAST_UPDATED, SITE_NAMES } from '../../data/site-config';
+import { route } from '../../i18n/routes';
+const lang = 'en';
+---
+<PageLayout title={`Editorial policy of ${SITE_NAMES[lang]}: data, schools, corrections`} description="Which federal files Degree by Credit reads, why it ranks no school for money and collects no leads, how it tests its calculators and how it corrects a figure." lang={lang} noindex={true} breadcrumbs={[{ label: 'Editorial policy' }]} showAuthor={false}>
+  <div class="prose prose-slate max-w-none">
+    <h1>Editorial and corrections policy</h1>
+    <p>People read these pages before committing years and tens of thousands of dollars to a degree. A wrong price or an out-of-date figure can cost them money. So every price, count and rate is drawn from a dated federal file, computed by a script that can be rerun, and never typed into a page.</p>
+    <h2>Sources we use</h2>
+    <ul>
+      <li>IPEDS, the Integrated Postsecondary Education Data System of the National Center for Education Statistics: directory, charges and distance education files;</li>
+      <li>College Scorecard, U.S. Department of Education: accreditor, award rates, Pell share, net price, debt and earnings;</li>
+      <li>studentaid.gov for how federal aid works.</li>
+    </ul>
+    <h2>What we refuse to print</h2><p>Paid rankings, “best school” claims, prices copied from lead-generation sites, and any figure we could not trace to a federal file or a school’s own page. Where a college reports nothing, the page says “not reported” instead of guessing.</p>
+    <h2>Schools</h2><p>Schools are listed by rules written on the method page (size, price, state), never by request or payment. Being listed is not a recommendation; being left out is not a judgment.</p>
+    <h2>Testing</h2><p>Every build runs the engine tests and the page checks. A failing test stops the build.</p>
+    <h2>Review</h2><p>The files are reread by hand when the Department of Education publishes new ones. Nothing is fetched automatically and no schedule is promised. Each page shows the date the files were read.</p>
+    <h2>Corrections</h2>
+    <ol><li>We open the file again.</li><li>We correct the script or the engine and add a test for the case.</li><li>The pages rebuild and show the new date.</li></ol>
+    <p>Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Published by {AUTHOR_NAME}.</p>
+    <h2>Independence</h2><p>No college, accreditor or marketing company pays for or reviews what is published here; the site takes no commission and sells no contact details. See also the <a href={route('method', lang)}>method</a>. Version: {LAST_UPDATED}.</p>
+  </div>
+</PageLayout>

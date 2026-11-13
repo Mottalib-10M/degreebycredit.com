@@ -1,0 +1,242 @@
+{
+ "built": "2026-11-13",
+ "ipedsYear": "2023-24",
+ "ipedsFall": "fall 2023",
+ "hdYear": "2024-25",
+ "scorecardRelease": "2026-11-02",
+ "files": {
+  "HD2024.zip": "https://nces.ed.gov/ipeds/datacenter/data/HD2024.zip",
+  "IC2023_AY.zip": "https://nces.ed.gov/ipeds/datacenter/data/IC2023_AY.zip",
+  "EF2023A_DIST.zip": "https://nces.ed.gov/ipeds/datacenter/data/EF2023A_DIST.zip",
+  "scorecard-inst.zip": "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_11022026.zip"
+ },
+ "national": {
+  "n": 3801,
+  "nOnline": 2530,
+  "tot": 18999933,
+  "exc": 4953658,
+  "som": 5324140,
+  "nH2": 2961,
+  "nH6": 1774,
+  "medPub4": 278,
+  "medPub2": 146,
+  "medPub2d": 127,
+  "medNpf4": 940,
+  "medFp4": 510,
+  "medPub4out": 620,
+  "medGradPub": 471,
+  "medGradPubOut": 914,
+  "medGradNpf": 733,
+  "medGradFp": 609,
+  "medOm8Online": 0.4113,
+  "medOm8Campus": 0.5969,
+  "medFeePub4": 1210,
+  "medFeePub2": 552,
+  "medFeeNpf4": 924,
+  "medFeeFp4": 720,
+  "medPub2out": 269,
+  "nPub4": 772,
+  "nPub2": 752,
+  "nNpf4": 1171,
+  "nFp4": 169,
+  "nSameOut": 71,
+  "nPub4Out": 772,
+  "nOm8Online": 363,
+  "nOm8Campus": 2261,
+  "nAcc": 2500,
+  "nNoAcc": 30,
+  "nPellData": 2439,
+  "medPellOnline": 0.4309,
+  "medDebtOnline": 11259,
+  "medEarnOnline": 46466,
+  "medNpOnline": 17186,
+  "nNpOnline": 312,
+  "q": [
+   24,
+   46,
+   46,
+   46,
+   46,
+   46,
+   66,
+   76,
+   76,
+   76,
+   87,
+   96,
+   99,
+   100,
+   104,
+   107,
+   114,
+   120,
+   124,
+   127,
+   130,
+   139,
+   146,
+   150,
+   159,
+   162,
+   166,
+   172,
+   176,
+   180,
+   185,
+   186,
+   191,
+   196,
+   202,
+   209,
+   213,
+   215,
+   221,
+   228,
+   236,
+   243,
+   250,
+   254,
+   260,
+   270,
+   276,
+   286,
+   295,
+   296,
+   302,
+   307,
+   319,
+   326,
+   333,
+   339,
+   349,
+   355,
+   372,
+   382,
+   390,
+   401,
+   413,
+   425,
+   437,
+   450,
+   470,
+   485,
+   500,
+   514,
+   524,
+   550,
+   582,
+   607,
+   634,
+   660,
+   687,
+   715,
+   756,
+   796,
+   830,
+   868,
+   897,
+   932,
+   980,
+   1000,
+   1035,
+   1080,
+   1110,
+   1150,
+   1210,
+   1269,
+   1353,
+   1400,
+   1483,
+   1590,
+   1695,
+   1843,
+   2002,
+   2235,
+   9275
+  ],
+  "nQ": 2343,
+  "nMostlyOnline": 393,
+  "accreditors": [
+   [
+    "Higher Learning Commission",
+    813
+   ],
+   [
+    "Southern Association of Colleges and Schools Commission on Colleges",
+    672
+   ],
+   [
+    "Middle States Commission on Higher Education",
+    339
+   ],
+   [
+    "New England Commission on Higher Education",
+    149
+   ],
+   [
+    "Northwest Commission on Colleges and Universities",
+    138
+   ],
+   [
+    "Western Association of Schools and Colleges Accrediting Commission for Community and Junior Colleges",
+    125
+   ],
+   [
+    "Western Association of Schools and Colleges Senior Colleges and University Commission",
+    103
+   ],
+   [
+    "Commission on Accrediting of the Association of Theological Schools",
+    29
+   ],
+   [
+    "Accrediting Commission of Career Schools and Colleges",
+    27
+   ],
+   [
+    "Accrediting Bureau of Health Education Schools",
+    23
+   ],
+   [
+    "NA",
+    19
+   ],
+   [
+    "Association for Biblical Higher Education",
+    19
+   ],
+   [
+    "Transnational Association of Christian Colleges and Schools",
+    19
+   ],
+   [
+    "Distance Education Accrediting Commission",
+    16
+   ],
+   [
+    "Accrediting Council for Continuing Education & Training",
+    9
+   ],
+   [
+    "American Board of Funeral Service Education Committee on Accreditation",
+    8
+   ],
+   [
+    "Council on Occupational Education",
+    4
+   ],
+   [
+    "American Bar Association",
+    2
+   ],
+   [
+    "American Osteopathic Association",
+    1
+   ],
+   [
+    "Midwifery Education Accreditation Council",
+    1
+   ]
+  ]
+ }
+}

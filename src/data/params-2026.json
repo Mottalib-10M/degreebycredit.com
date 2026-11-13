@@ -1,0 +1,148 @@
+{
+ "_lisezmoi": "Every figure the site shows comes from the federal files named here (IPEDS and College Scorecard), built by scripts/build-data.py into colleges.json and states.json, or from this file. Nothing is typed into a page. Manual rebuild when NCES or the Department of Education publish new files: no schedule is promised (RECETTE §4, §12.1).",
+ "year": 2026,
+ "retrieved_at": "2026-11-13",
+ "valid_from": "2026-01-01",
+ "valid_to": "2027-12-31",
+ "source": "IPEDS data files HD2024, IC2023_AY and EF2023A_DIST (NCES) and the College Scorecard most-recent-cohorts institution file released on November 2, 2026 (U.S. Department of Education)",
+ "source_url": "https://nces.ed.gov/ipeds/use-the-data",
+ "ipeds": {
+  "chargesYear": "2023-24",
+  "enrollmentTerm": "fall 2023",
+  "headerYear": "2024-25",
+  "chargesFile": "IC2023_AY",
+  "distanceFile": "EF2023A_DIST",
+  "headerFile": "HD2024",
+  "nextFilesChecked": "2026-11-13",
+  "nextFilesStatus": "IC2024_AY and EF2024A_DIST were not yet published on the IPEDS data center on 2026-11-13"
+ },
+ "scorecard": {
+  "release": "2026-11-02",
+  "file": "Most-Recent-Cohorts-Institution_11022026.zip",
+  "license": "CC-BY (catalog.data.gov record for College Scorecard, publisher OPEPD)",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "awardCohort": "2017-18",
+  "awardNote": "OMAWDP8_ALL: share of all entering students (first-time and transfer, full- and part-time) with an award within 8 years; students who entered in 2017-18, reported to IPEDS in 2025-26",
+  "pellYear": "2024-25",
+  "netPriceYear": "2024-25",
+  "debtYears": "federal fiscal years 2024 and 2025, pooled",
+  "earningsNote": "median earnings 10 years after entry of students who entered in 2011-12 and 2012-13, measured in 2022 and 2023, in 2024 dollars",
+  "accreditorAsOf": "2026-08-27",
+  "dictionary": "CollegeScorecardDataDictionary.xlsx, released October 15, 2026"
+ },
+ "nces": {
+  "policy": "Unless stated otherwise, all information on the U.S. Department of Education's IES website is in the public domain and may be reproduced, published, linked to, or otherwise used without IES' permission.",
+  "citation": "U.S. Department of Education. Institute of Education Sciences, National Center for Education Statistics. Integrated Postsecondary Education Data System (IPEDS)."
+ },
+ "credits": {
+  "associate": 60,
+  "bachelor": 120,
+  "master": 36,
+  "certificate": 24,
+  "note": "Typical program lengths used as calculator starting values only (associate about 60 semester credits, bachelor's about 120, master's 30 to 36): the catalog of each program sets the real number, which the reader types."
+ },
+ "defaults": {
+  "creditsPerTerm": 12,
+  "termsPerYear": 2,
+  "creditsPerYearFullTime": 30,
+  "note": "Calculator assumptions, not data: 12 credits a term over two terms is a common part-time-to-full-time pace for working adults; 30 credits is the full-time year used to spread required annual fees over credits. The reader changes them."
+ },
+ "sources": {
+  "ipeds_use": {
+   "url": "https://nces.ed.gov/ipeds/use-the-data",
+   "label": {
+    "en": "NCES, IPEDS: use the data (complete data files)"
+   }
+  },
+  "ipeds_ic_ay": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/IC2023_AY.zip",
+   "label": {
+    "en": "NCES, IPEDS IC2023_AY: student charges for academic year 2023-24, per-credit-hour charges (zip)"
+   }
+  },
+  "ipeds_ef_dist": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/EF2023A_DIST.zip",
+   "label": {
+    "en": "NCES, IPEDS EF2023A_DIST: fall 2023 enrollment by distance-education status (zip)"
+   }
+  },
+  "ipeds_hd": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/HD2024.zip",
+   "label": {
+    "en": "NCES, IPEDS HD2024: institutional characteristics, directory information 2024-25 (zip)"
+   }
+  },
+  "ipeds_ic_ay_dict": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/IC2023_AY_Dict.zip",
+   "label": {
+    "en": "NCES, IPEDS IC2023_AY dictionary: definition of the per-credit-hour charge variables (zip)"
+   }
+  },
+  "ipeds_ef_dist_dict": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/EF2023A_DIST_Dict.zip",
+   "label": {
+    "en": "NCES, IPEDS EF2023A_DIST dictionary: exclusively and partly distance-education students (zip)"
+   }
+  },
+  "ipeds_glossary": {
+   "url": "https://surveys.nces.ed.gov/ipeds/public/glossary",
+   "label": {
+    "en": "NCES, IPEDS glossary (distance education, Title IV, sector, award rates)"
+   }
+  },
+  "ipeds_navigator": {
+   "url": "https://nces.ed.gov/collegenavigator/",
+   "label": {
+    "en": "NCES, College Navigator (the same IPEDS data, school by school)"
+   }
+  },
+  "nces_policy": {
+   "url": "https://nces.ed.gov/help/sitepolicies.asp",
+   "label": {
+    "en": "NCES, site policies: permission to replicate information (public domain, citation)"
+   }
+  },
+  "scorecard_data": {
+   "url": "https://collegescorecard.ed.gov/data/",
+   "label": {
+    "en": "U.S. Department of Education, College Scorecard data files (release of November 2, 2026)"
+   }
+  },
+  "scorecard_doc": {
+   "url": "https://collegescorecard.ed.gov/assets/InstitutionDataDocumentation.pdf",
+   "label": {
+    "en": "U.S. Department of Education, College Scorecard institution-level data documentation (PDF)"
+   }
+  },
+  "scorecard_site": {
+   "url": "https://collegescorecard.ed.gov/",
+   "label": {
+    "en": "U.S. Department of Education, College Scorecard (consumer site)"
+   }
+  },
+  "studentaid_fafsa": {
+   "url": "https://studentaid.gov/h/apply-for-aid/fafsa",
+   "label": {
+    "en": "Federal Student Aid, apply for aid with the FAFSA form"
+   }
+  },
+  "studentaid_pell": {
+   "url": "https://studentaid.gov/understand-aid/types/grants/pell",
+   "label": {
+    "en": "Federal Student Aid, Federal Pell Grants"
+   }
+  },
+  "studentaid_school": {
+   "url": "https://studentaid.gov/understand-aid/eligibility/requirements",
+   "label": {
+    "en": "Federal Student Aid, eligibility requirements for federal student aid"
+   }
+  },
+  "scorecard_dict": {
+   "url": "https://collegescorecard.ed.gov/files/CollegeScorecardDataDictionary.xlsx",
+   "label": {
+    "en": "College Scorecard data dictionary and cohort map (U.S. Department of Education)"
+   }
+  }
+ }
+}

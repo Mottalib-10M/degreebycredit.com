@@ -1,0 +1,30 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { LAST_UPDATED, AUTHOR_NAME, CONTACT_EMAIL, AUTHOR_ROLE } from '../../data/site-config';
+import { route } from '../../i18n/routes';
+import { personSchema, organizationSchema, breadcrumbSchema, profilePageSchema } from '../../lib/seo';
+import { displayDate } from '../../lib/format';
+import { PAGES } from '../../lib/guides';
+import { helpers } from '../../lib/helpers';
+const lang = 'en';
+const h = helpers(true);
+const n = PAGES.length + 3;
+---
+<PageLayout title="Degree by Credit: who reads the federal college files" description="Who publishes Degree by Credit, why it prices online degrees from the federal IPEDS and College Scorecard files, not rankings or ads, and what it does not do." lang={lang} jsonLd={[personSchema(lang), organizationSchema(lang), profilePageSchema({ path: route('about', lang), lang }), breadcrumbSchema([{ name: 'Home', path: route('home', lang) }, { name: 'About', path: route('about', lang) }])]} breadcrumbs={[{ label: 'About' }]}>
+  <header class="mb-6"><p class="kicker">About</p><h1 class="mt-1 text-3xl font-bold text-navy-900 md:text-4xl">Who builds the prices on Degree by Credit</h1></header>
+  <div class="prose prose-slate max-w-none">
+    <div class="not-prose mb-6"><div class="text-lg font-semibold text-navy-900">{AUTHOR_NAME}</div><div class="text-navy-700">{AUTHOR_ROLE[lang]}</div></div>
+    <p>Degree by Credit is published by Radif Partners, a company that builds free calculators on official data. It is for adults weighing an online degree: a worker with 40 credits from years ago, a parent comparing two programs, a community college student looking at the next step.</p>
+    <h2>Why Degree by Credit exists</h2>
+    <p>Search for online colleges and most of what comes back is written to collect your phone number. Lists of “best” or “most affordable” schools are often paid placements, rarely say where a price comes from, and stop at the school’s name. Yet every college that takes federal aid reports its price per credit, its online enrollment and its results to the Department of Education. We do the arithmetic on those files, say where each number comes from, and let you put in your own credits and grants.</p>
+    <h2>Where the figures come from</h2>
+    <p>The IPEDS files of the National Center for Education Statistics, for {h.P.ipeds.chargesYear} charges and {h.P.ipeds.enrollmentTerm} enrollment, and the College Scorecard file released on {displayDate(h.P.scorecard.release, 'en-US')}. The <a href={route('method', lang)}>method page</a> lists every variable and rule.</p>
+    <h2>What we are not</h2>
+    <p>We are not a college, an accreditor or a lead seller, and we are not affiliated with the U.S. Department of Education, NCES or any school named. No school pays to appear or to rank, and we recommend none. Nothing here is financial advice; admission, aid and prices are decided by each college.</p>
+    <h2>How the site is paid for</h2>
+    <p>It is free and asks for no account, e-mail or phone number. We take no commission and carry no affiliate link. If advertising is added one day it will never sit above a calculator, and it cannot use what you type, because nothing you type leaves your browser.</p>
+    <h2>Tell us when a figure is wrong</h2>
+    <p>Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> with the page, the figure and the source you rely on. The <a href={route('editorial', lang)}>editorial policy</a> explains how a correction is made. The site has {n} indexed pages, listed in the footer.</p>
+    <p class="text-sm text-navy-600">Files last read on <time datetime={LAST_UPDATED}>{displayDate(LAST_UPDATED, 'en-US')}</time>.</p>
+  </div>
+</PageLayout>

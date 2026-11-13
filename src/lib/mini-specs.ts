@@ -1,0 +1,383 @@
+/**
+ * Calculators, one per subject (RECETTE §9.3). Every figure is computed by the tested engine of
+ * `lib/engine/degree.ts`; the starting values are medians and rows of the federal files (IPEDS 2023-24 charges,
+ * College Scorecard award rates), read through `lib/browser-data.ts`. Nothing is fetched while the reader types.
+ */
+import type { MiniSpec, MiniInput } from './mini-types';
+import { P } from './engine/params';
+import * as E from './engine/degree';
+import { NATB as N, FEATURED_B, CHEAP4_B, STATES_B, shortName, sector } from './browser-data';
+import metaRaw from '../data/data-meta.json';
+import { formatMoney as fm, formatNumber } from './format';
+import { pct } from './pct';
+
+const m = (n: number) => fm(Math.round(n), 0);
+const num = (n: number) => formatNumber(n, 0);
+const yrs = (y: number) => (y === 1 ? '1 year' : `${formatNumber(y, y % 1 ? 1 : 0)} years`);
+const NX = (metaRaw as any).national as { nPub2: number; nPub4: number; nSameOut: number; nPub4Out: number; medGradPubOut: number; medPellOnline: number };
+const money = (id: string, label: string, def: number, help?: string, avance = false): MiniInput => ({ id, label, def, unit: '$', max: 1_000_000, help, ...(avance ? { avance } : {}) });
+const count = (id: string, label: string, def: number, max: number, help?: string, avance = false): MiniInput => ({ id, label, def, max, help, ...(avance ? { avance } : {}) });
+const opt = (labels: string[]) => labels.map((label, i) => ({ value: String(i), label }));
+const IPEDS = `IPEDS ${P.ipeds.chargesYear}`;
+const RATE_NOTE = `Charges reported by each college to IPEDS for ${P.ipeds.chargesYear}. Some colleges bill online students a separate rate: the school’s own tuition page is the one that counts.`;
+
+const LEVELS = [
+  { name: 'associate degree', credits: P.credits.associate },
+  { name: 'bachelor’s degree', credits: P.credits.bachelor },
+  { name: 'master’s degree', credits: P.credits.master },
+  { name: 'certificate', credits: P.credits.certificate },
+];
+/** Median per-credit charge and yearly fees of a type of school, by level (graduate charges for the master’s). */
+function median(level: number, s: number): { rate: number; fees: number; what: string; n: string } {
+  const grad = level === 2;
+  const two = level === 0 || level === 3;
+  if (s === 0) return grad ? { rate: N.medGradPub, fees: 0, what: 'a public university in your state', n: 'graduate rate of public universities' } : two ? { rate: N.medPub2, fees: N.medFeePub2, what: 'a public community college in your state', n: `${num(NX.nPub2)} public two-year colleges` } : { rate: N.medPub4, fees: N.medFeePub4, what: 'a public university in your state', n: `${num(NX.nPub4)} public four-year colleges` };
+  if (s === 1) return grad ? { rate: NX.medGradPubOut, fees: 0, what: 'a public university in another state', n: 'out-of-state graduate rate of public universities' } : two ? { rate: N.medPub2out, fees: N.medFeePub2, what: 'a public community college in another state', n: 'out-of-state rate of public two-year colleges' } : { rate: N.medPub4out, fees: N.medFeePub4, what: 'a public university in another state', n: 'out-of-state rate of public four-year colleges' };
+  if (s === 2) return { rate: grad ? N.medGradNpf : N.medNpf4, fees: grad ? 0 : N.medFeeNpf4, what: 'a private nonprofit college', n: grad ? 'graduate rate of private nonprofit colleges' : 'private nonprofit four-year colleges' };
+  return { rate: grad ? N.medGradFp : N.medFp4, fees: grad ? 0 : N.medFeeFp4, what: 'a for-profit college', n: grad ? 'graduate rate of for-profit colleges' : 'for-profit four-year colleges' };
+}
+const SECTOR_OPTS = opt(['Public, in my state', 'Public, in another state', 'Private nonprofit', 'Private for-profit', 'I know my school’s price']);
+const TERMS = [{ value: '2', label: '2 terms (semesters)' }, { value: '3', label: '3 terms (trimesters)' }, { value: '4', label: '4 terms (quarters)' }, { value: '6', label: '6 terms (8-week terms)' }];
+const pickFeatured = opt(FEATURED_B.map((f) => shortName(f.n)));
+/** Tuition of `credits` at a featured school: per credit, or its flat yearly price at 30 credits a year. */
+function featuredTuition(f: (typeof FEATURED_B)[number], credits: number): { tuition: number; years: number; how: string } {
+  const years = Math.ceil((credits / 30) * 2 - 1e-9) / 2;
+  if (f.h2) return { tuition: credits * f.h2, years, how: `${m(f.h2)} a credit` };
+  const t = E.flatRateTuition(f.t2 ?? 0, credits, 30);
+  return { tuition: t.tuition, years: t.years, how: `flat ${m(f.t2 ?? 0)} a year, at 30 credits a year` };
+}
+const TX = Math.max(0, STATES_B.findIndex((s) => s.code === 'TX'));
+
+const SPECS: Record<string, MiniSpec> = {
+  'degree-cost': {
+    title: 'What will your online degree cost?',
+    exemple: 'Example: bachelor’s degree at the median public college in your state',
+    cta: 'Price per credit, college by college', ctaPage: 'cost-per-credit-hour',
+    inputs: [
+      { id: 'level', label: 'Degree', def: 1, options: opt(LEVELS.map((l) => `${l.name.charAt(0).toUpperCase()}${l.name.slice(1)} (${l.credits} credits)`)) },
+      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in my state”: the median of what public colleges charge their own residents.' },
+      { ...money('rate', 'Your school’s price per credit', N.medPub4, 'On the school’s tuition page, “per credit hour”.'), showIf: (v) => v.sector === 4 },
+      { ...money('fees', 'Required fees per year', N.medFeePub4, 'Technology, online or student fees. Not sure? Leave the median shown.'), showIf: (v) => v.sector === 4 },
+      count('transfer', 'Credits you already have (transfer)', 0, 200, 'Credits from an earlier college, an exam or the military that the school accepts. Not sure? Leave 0.'),
+      money('grants', 'Grants per year (Pell, state, employer)', 0, 'Money you do not repay. Not sure? Leave 0: the total is then the full price.', true),
+      count('perTerm', 'Credits per term', P.defaults.creditsPerTerm, 30, '12 is full time at most schools; 6 is half time.', true),
+      { id: 'terms', label: 'Terms per year', def: P.defaults.termsPerYear, options: TERMS, avance: true },
+    ],
+    run: (v, touched = {}) => {
+      const L = LEVELS[v.level] ?? LEVELS[1];
+      const md = median(v.level, v.sector);
+      const own = v.sector === 4;
+      const rate = own ? v.rate : md.rate;
+      const fees = own ? v.fees : md.fees;
+      const r = E.degreeCost({ perCredit: rate, credits: L.credits, transfer: v.transfer, feesPerYear: fees, creditsPerTerm: v.perTerm, termsPerYear: v.terms, grantsPerYear: v.grants });
+      const rows: Array<[string, string]> = [
+        [`${num(r.remaining)} credits × ${m(rate)}`, m(r.tuition)],
+        [`Required fees, ${yrs(r.years)}`, fees > 0 ? m(r.fees) : 'not counted'],
+      ];
+      if (r.grants > 0) rows.push(['Your grants', `− ${m(r.grants)}`]);
+      rows.push(['Time to finish at your pace', yrs(Math.round(r.yearsExact * 10) / 10)], ['Per month while you study', m(r.perMonth)]);
+      return {
+        head: [`Online ${L.name}: tuition and fees${r.grants > 0 ? ' after grants' : ''}`, m(r.net)],
+        hyp: own ? `Assumes your price, ${num(v.perTerm)} credits a term and ${num(v.terms)} terms a year.` : `Assumes the median charge of ${md.what} (${IPEDS}), ${num(v.perTerm)} credits a term.`,
+        alert: v.level === 2 && !own ? 'Graduate fees are not in the federal file: add them with “I know my school’s price”.' : undefined,
+        rows, note: RATE_NOTE,
+      };
+    },
+  },
+  'credit-hour': {
+    title: 'One price per credit: what a term and a year cost',
+    exemple: 'Example: the median public price for residents',
+    cta: 'Cheapest online colleges', ctaPage: 'cheapest-online-colleges',
+    inputs: [
+      money('rate', 'Price per credit hour', N.medPub4, `Not sure? The median of public four-year colleges for their residents is shown (${IPEDS}).`),
+      count('perTerm', 'Credits you take per term', 6, 30, 'One course is usually 3 credits: 6 credits is two courses.'),
+      money('fees', 'Required fees per year', N.medFeePub4, 'Not sure? Leave the median shown.', true),
+      { id: 'terms', label: 'Terms per year', def: 2, options: TERMS, avance: true },
+    ],
+    run: (v, touched = {}) => {
+      const term = v.rate * v.perTerm + (v.terms > 0 ? v.fees / v.terms : 0);
+      const year = term * v.terms;
+      const eff = E.effPerCredit(v.rate, v.fees, v.perTerm * v.terms);
+      const share = E.shareAtOrBelow(N.q, v.rate);
+      return {
+        head: [`One term at ${m(v.rate)} a credit, ${num(v.perTerm)} credits`, m(term)],
+        hyp: `Fees of ${m(v.fees)} a year spread over ${num(v.terms)} terms.`,
+        rows: [['One 3-credit course', m(3 * v.rate)], ['One year at this pace', m(year)], ['Real price per credit, fees included', m(eff)], [`Colleges with online students charging this or less`, `${pct(share, 0)} of ${num(N.nQ)}`]],
+        note: RATE_NOTE,
+      };
+    },
+  },
+  'cheap-pick': {
+    title: 'The lowest public price for online study in your state',
+    exemple: 'Example: Texas',
+    cta: 'Cheapest online bachelor’s degrees', ctaPage: 'cheapest-online-bachelors-degree',
+    inputs: [
+      { id: 'st', label: 'Your state', def: TX, options: opt(STATES_B.map((s) => s.name)) },
+      count('credits', 'Credits you need', P.credits.associate, 200, 'An associate degree is about 60 credits, a bachelor’s about 120.'),
+    ],
+    run: (v, touched = {}) => {
+      const s = STATES_B[v.st] ?? STATES_B[TX];
+      const a = s.cheapest, b = s.cheapest4;
+      if (!a) return { head: [`${s.name}: no public college reports a price per credit`, '—'], rows: [], note: 'Some colleges charge a flat price per term and report no per-credit charge.' };
+      return {
+        head: [`${s.name}: ${num(v.credits)} credits at ${shortName(a.n)}, fees included`, m(a.eff * v.credits)],
+        hyp: `Assumes ${m(a.h2)} a credit for state residents plus ${m(a.f2 ?? 0)} of fees a year spread over 30 credits.`,
+        alert: a.lvl === 2 && v.credits > 70 ? 'A community college stops at the associate degree: the four-year line below is the one for a bachelor’s.' : undefined,
+        rows: [
+          ['Lowest price per credit with fees', `${m(a.eff)}`],
+          ['Lowest four-year university', b ? `${shortName(b.n)}, ${m(b.eff)} a credit` : 'none reports a per-credit charge'],
+          ['Same credits there', b ? m(b.eff * v.credits) : '—'],
+        ],
+        note: `Public colleges with 50 or more fully online students, prices for state residents. ${RATE_NOTE}`,
+      };
+    },
+  },
+  'cheap-bachelor': {
+    title: 'A 120-credit bachelor’s at a low-cost university',
+    exemple: 'Example: a resident of the state',
+    cta: 'In-state or out-of-state: the gap', ctaPage: 'out-of-state-online-tuition',
+    inputs: [
+      { id: 'school', label: 'University', def: 0, options: opt(CHEAP4_B.slice(0, 15).map((c) => `${shortName(c.n)} (${c.st})`)) },
+      { id: 'res', label: 'You live', def: 0, options: opt(['In the same state', 'In another state']) },
+      count('transfer', 'Credits you already have', 0, 120, 'Not sure? Leave 0.', true),
+    ],
+    run: (v, touched = {}) => {
+      const c = CHEAP4_B[v.school] ?? CHEAP4_B[0];
+      const out = v.res === 1;
+      const rate = out ? (c.h3 ?? c.h2 ?? 0) : (c.h2 ?? 0);
+      const r = E.degreeCost({ perCredit: rate, credits: P.credits.bachelor, transfer: v.transfer, feesPerYear: c.f2 ?? 0, creditsPerTerm: 15, termsPerYear: 2, grantsPerYear: 0 });
+      return {
+        head: [`${shortName(c.n)}, ${out ? 'from another state' : 'state resident'}`, m(r.net)],
+        hyp: `Assumes ${m(rate)} a credit, ${m(c.f2 ?? 0)} of fees a year and 30 credits a year.`,
+        rows: [[`${num(r.remaining)} credits × ${m(rate)}`, m(r.tuition)], [`Fees, ${yrs(r.years)}`, m(r.fees)], ['Students studying fully online', c.exc ? num(c.exc) : 'not reported'], ['Award within 8 years of starting', c.om8 != null ? pct(c.om8, 0) : 'not reported']],
+        note: RATE_NOTE,
+      };
+    },
+  },
+  'out-of-state': {
+    title: 'The out-of-state premium on your degree',
+    exemple: 'Example: the two public medians',
+    cta: 'Online colleges by state', ctaPage: 'online-colleges-by-state',
+    inputs: [
+      money('inRate', 'Price per credit for residents', N.medPub4, 'Not sure? The public four-year median is shown.'),
+      money('outRate', 'Price per credit from another state', N.medPub4out, 'On the same tuition page, “non-resident” or “out-of-state”.'),
+      count('credits', 'Credits you still need', P.credits.bachelor, 200),
+    ],
+    run: (v, touched = {}) => {
+      const g = E.creditGap(v.inRate, v.outRate, v.credits);
+      return {
+        head: [`Extra cost of studying from another state, ${num(v.credits)} credits`, m(Math.max(0, g.total))],
+        hyp: `Assumes ${m(v.inRate)} against ${m(v.outRate)} a credit, fees left out.`,
+        rows: [['Extra per credit', m(Math.max(0, g.perCredit))], ['Out-of-state price ÷ resident price', `${formatNumber(g.ratio, 1)} times`], ['Public four-year colleges charging everyone the same', `${num(NX.nSameOut)} of ${num(NX.nPub4Out)}`]],
+        note: RATE_NOTE,
+      };
+    },
+  },
+  afford: {
+    title: 'The price per credit your budget can carry',
+    exemple: 'Example: $400 a month',
+    cta: 'Cheapest online colleges', ctaPage: 'cheapest-online-colleges',
+    inputs: [
+      money('budget', 'What you can pay each month', 400, 'Your own figure: what is left each month after rent and bills.'),
+      count('credits', 'Credits per year', 24, 60, '24 credits is eight 3-credit courses a year.'),
+      money('grants', 'Grants per year', 0, 'Pell, state or employer money you do not repay. Not sure? Leave 0.'),
+      money('fees', 'Required fees per year', N.medFeePub4, 'Not sure? Leave the median shown.', true),
+    ],
+    run: (v, touched = {}) => {
+      const x = E.affordablePerCredit(v.budget, v.credits, v.fees, v.grants);
+      const share = E.shareAtOrBelow(N.q, x);
+      return {
+        head: ['Highest price per credit you can pay', m(Math.floor(x))],
+        hyp: `Assumes ${m(v.budget)} a month for 12 months, ${num(v.credits)} credits a year and ${m(v.fees)} of fees.`,
+        alert: x <= 0 ? 'The fees alone take the whole budget: lower the credits per year or add a grant.' : undefined,
+        rows: [['Your year of study', m(12 * v.budget + v.grants)], [`Colleges with online students at or under this price`, `${pct(share, 0)} of ${num(N.nQ)}`], ['Median public price for residents', m(N.medPub4)]],
+        note: `Share read on the per-credit charges of colleges with 50 or more fully online students (${IPEDS}).`,
+      };
+    },
+  },
+  'fafsa-grant': {
+    title: 'A year at a large online school, after your grants',
+    exemple: 'Example: no grant counted',
+    cta: 'How to read the federal figures', ctaPage: 'method',
+    inputs: [
+      { id: 'school', label: 'School', def: 1, options: pickFeatured },
+      count('credits', 'Credits per year', 24, 60, '24 credits is eight courses.'),
+      money('grant', 'Grants you expect per year', 0, 'Your Pell Grant and any state grant, from your aid offer. Not sure? Leave 0.'),
+    ],
+    run: (v, touched = {}) => {
+      const f = FEATURED_B[v.school] ?? FEATURED_B[0];
+      const t = featuredTuition(f, v.credits);
+      const year = (f.h2 ? f.h2 * v.credits : f.t2 ?? 0) + (f.f2 ?? 0);
+      const c = E.coverage(year, v.grant);
+      return {
+        head: [`${shortName(f.n)}: one year, ${num(v.credits)} credits${v.grant ? ', after grants' : ''}`, m(c.left)],
+        hyp: `Assumes ${t.how} and ${m(f.f2 ?? 0)} of fees a year.`,
+        rows: [['Grants cover', pct(c.share, 0)], ['Students who receive a Pell Grant here', f.pell != null ? pct(f.pell, 0) : 'not reported'], ['Median federal debt when leaving', f.debt ? m(f.debt) : 'not reported']],
+        note: `Pell share and debt: College Scorecard, released ${P.scorecard.release}. Charges: ${IPEDS}.`,
+      };
+    },
+  },
+  transfer: {
+    title: 'What your earlier credits save you',
+    exemple: 'Example: 30 credits, all accepted',
+    cta: 'Online bachelor’s degree: pace and cost', ctaPage: 'online-bachelors-degree',
+    inputs: [
+      count('earned', 'Credits you earned elsewhere', 30, 200, 'From your transcript: a community college, an earlier university, an exam.'),
+      { id: 'accepted', label: 'Share the new school accepts', def: 100, unit: '%', max: 100, help: 'Not sure? Try 100, then 50: schools decide credit by credit.' },
+      money('rate', 'Price per credit at the new school', N.medPub4, 'Not sure? The public median is shown.'),
+      count('program', 'Credits the degree requires', P.credits.bachelor, 200, undefined, true),
+    ],
+    run: (v, touched = {}) => {
+      const acc = Math.min(v.program, Math.round((v.earned * Math.min(100, v.accepted)) / 100));
+      const s = E.transferSavings(acc, v.rate, 12);
+      return {
+        head: [`Saved with ${num(acc)} credits accepted`, m(s.dollars)],
+        hyp: `Assumes ${m(v.rate)} a credit and terms of 12 credits.`,
+        rows: [['Credits left to take', num(Math.max(0, v.program - acc))], ['Terms saved', formatNumber(s.terms, 1)], ['Credits not accepted', num(Math.max(0, v.earned - acc))]],
+        note: 'Each school decides which credits it accepts; the federal files say nothing about transfer policies.',
+      };
+    },
+  },
+  'grad-rate': {
+    title: 'Out of 100 students who start: who finishes?',
+    exemple: 'Example: the median of mostly online colleges',
+    cta: 'Largest online universities compared', ctaPage: 'largest-online-universities',
+    inputs: [
+      { id: 'school', label: 'School', def: -1, options: [{ value: '-1', label: 'Median of mostly online colleges' }, ...pickFeatured] },
+      money('year', 'What one year costs you', N.medPub4 * 24 + N.medFeePub4, 'Not sure? 24 credits at the median public price, with fees.'),
+    ],
+    run: (v, touched = {}) => {
+      const f = v.school >= 0 ? FEATURED_B[v.school] : null;
+      const rate = f ? f.om8 : N.medOm8Online;
+      const who = f ? shortName(f.n) : 'Mostly online colleges, median';
+      if (rate == null) return { head: [who, 'not reported'], rows: [], note: 'College Scorecard has no 8-year award rate for this school.' };
+      const fin = E.finishers(100, rate);
+      return {
+        head: [`${who}: students with a degree or certificate 8 years after starting`, `${num(fin)} of 100`],
+        hyp: `Award rate ${pct(rate, 0)}, all entering students, College Scorecard.`,
+        rows: [['Colleges with mostly on-campus students, median', `${num(E.finishers(100, N.medOm8Campus))} of 100`], ['Spent by a student who leaves after one year', m(v.year)], ['After two years', m(2 * v.year)]],
+        note: `Students who entered in 2017-18, followed for eight years (College Scorecard, released ${P.scorecard.release}).`,
+      };
+    },
+  },
+  'grad-cost': {
+    title: 'Online master’s degree: tuition by type of school',
+    exemple: 'Example: 36 credits at the public median',
+    cta: 'Price per credit, by college', ctaPage: 'cost-per-credit-hour',
+    inputs: [
+      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS },
+      { ...money('rate', 'Your program’s price per credit', N.medGradPub), showIf: (v) => v.sector === 4 },
+      count('credits', 'Credits in the program', P.credits.master, 90, 'Most master’s degrees ask for 30 to 36 credits; MBAs and some others more.'),
+      money('employer', 'Employer tuition help per year', 0, 'Not sure? Leave 0.'),
+      count('perYear', 'Credits per year', 18, 40, '18 credits is two courses in each of three terms.', true),
+      money('fees', 'Required fees per year', 0, 'From the school’s tuition page; the federal file has no graduate fee.', true),
+    ],
+    run: (v, touched = {}) => {
+      const md = median(2, v.sector);
+      const rate = v.sector === 4 ? v.rate : md.rate;
+      const r = E.degreeCost({ perCredit: rate, credits: v.credits, transfer: 0, feesPerYear: v.fees, creditsPerTerm: v.perYear, termsPerYear: 1, grantsPerYear: v.employer });
+      return {
+        head: [`Master’s degree, ${num(v.credits)} credits${r.grants ? ', after employer help' : ''}`, m(r.net)],
+        hyp: v.sector === 4 ? `Assumes your price of ${m(rate)} a credit.` : `Assumes the median graduate charge of ${md.what}, ${m(rate)} a credit (${IPEDS}).`,
+        alert: v.fees > 0 ? undefined : 'Fees not counted: add them under “More details”.',
+        rows: [['Tuition', m(r.tuition)], ['Time to finish', yrs(r.years)], ['Employer help', r.grants ? `− ${m(r.grants)}` : 'none typed']],
+        note: RATE_NOTE,
+      };
+    },
+  },
+  'two-plus-two': {
+    title: 'Associate first, then a bachelor’s: what the route saves',
+    exemple: 'Example: the two public medians',
+    cta: 'Online bachelor’s degree: pace and cost', ctaPage: 'online-bachelors-degree',
+    inputs: [
+      money('cc', 'Community college price per credit', N.medPub2d, 'Not sure? The median for residents of the college’s district is shown.'),
+      money('uni', 'University price per credit', N.medPub4, 'Not sure? The public median for state residents is shown.'),
+      count('ccCredits', 'Credits taken at the community college', P.credits.associate, 120, 'An associate degree is about 60 credits.'),
+    ],
+    run: (v, touched = {}) => {
+      const r = E.twoPlusTwo(v.cc, v.uni, v.ccCredits, P.credits.bachelor);
+      return {
+        head: [`Saved on a 120-credit bachelor’s by starting at a community college`, m(Math.max(0, r.saved))],
+        hyp: `Assumes all ${num(Math.min(v.ccCredits, P.credits.bachelor))} credits transfer; fees left out.`,
+        rows: [['Associate route, tuition', m(r.route)], ['All at the university', m(r.direct)], ['The associate degree alone', m(Math.min(v.ccCredits, P.credits.bachelor) * v.cc)]],
+        note: RATE_NOTE,
+      };
+    },
+  },
+  'bachelor-pace': {
+    title: 'Your pace, your years, your bill',
+    exemple: 'Example: two courses a term, three terms a year',
+    cta: 'What earlier credits save', ctaPage: 'accredited-online-colleges',
+    inputs: [
+      { id: 'perTerm', label: 'Credits per term', def: 6, options: [6, 9, 12, 15].map((n) => ({ value: String(n), label: `${n} credits (${n / 3} courses)` })) },
+      { id: 'terms', label: 'Terms per year', def: 3, options: TERMS },
+      money('rate', 'Price per credit', N.medPub4, 'Not sure? The public median for residents is shown.'),
+      count('transfer', 'Credits you already have', 0, 120, 'Not sure? Leave 0.', true),
+      money('fees', 'Required fees per year', N.medFeePub4, undefined, true),
+    ],
+    run: (v, touched = {}) => {
+      const r = E.degreeCost({ perCredit: v.rate, credits: P.credits.bachelor, transfer: v.transfer, feesPerYear: v.fees, creditsPerTerm: v.perTerm, termsPerYear: v.terms, grantsPerYear: 0 });
+      return {
+        head: [`Years to a bachelor’s at ${num(v.perTerm * v.terms)} credits a year`, yrs(Math.round(r.yearsExact * 10) / 10)],
+        hyp: `Assumes ${num(r.remaining)} credits at ${m(v.rate)}, ${m(v.fees)} of fees a year.`,
+        rows: [['Tuition', m(r.tuition)], [`Fees, ${yrs(r.years)}`, m(r.fees)], ['Total', m(r.gross)], ['Per month', m(r.perMonth)]],
+        note: 'Fees are charged per year enrolled: a faster pace pays fewer years of them.',
+      };
+    },
+  },
+  state: {
+    title: 'Online colleges in your state',
+    exemple: 'Example: Texas',
+    cta: 'In-state or out-of-state: the gap', ctaPage: 'out-of-state-online-tuition',
+    inputs: [
+      { id: 'st', label: 'State', def: TX, options: opt(STATES_B.map((s) => s.name)) },
+      count('credits', 'Credits you need', P.credits.bachelor, 200),
+    ],
+    run: (v, touched = {}) => {
+      const s = STATES_B[v.st] ?? STATES_B[TX];
+      const eff = s.medEffPub ?? 0;
+      return {
+        head: [`${s.name}: ${num(v.credits)} credits at the median public price, fees included`, eff ? m(eff * v.credits) : 'not reported'],
+        hyp: `Median of ${num(s.nPub)} public colleges with online students, for state residents.`,
+        rows: [
+          ['Colleges with 50+ fully online students', num(s.nOnline)],
+          ['Lowest public price with fees', s.cheapest ? `${m(s.cheapest.eff)} a credit, ${shortName(s.cheapest.n)}` : 'none reported'],
+          ['Students fully online', s.share != null ? pct(s.share, 0) : 'not reported'],
+          ['Median award rate after 8 years', s.medOm8 != null ? pct(s.medOm8, 0) : 'not reported'],
+        ],
+        note: `Price with fees = in-state charge per credit plus yearly fees ÷ 30 (${IPEDS}).`,
+      };
+    },
+  },
+  'school-compare': {
+    title: 'Two online universities side by side',
+    exemple: 'Example: the two largest by online enrollment',
+    cta: 'Graduation rates of online colleges', ctaPage: 'online-college-graduation-rates',
+    inputs: [
+      { id: 'a', label: 'First school', def: 0, options: pickFeatured },
+      { id: 'b', label: 'Second school', def: 1, options: pickFeatured },
+      count('credits', 'Credits you need', P.credits.bachelor, 200),
+    ],
+    run: (v, touched = {}) => {
+      const A = FEATURED_B[v.a] ?? FEATURED_B[0];
+      const B = FEATURED_B[v.b] ?? FEATURED_B[1];
+      const ta = featuredTuition(A, v.credits), tb = featuredTuition(B, v.credits);
+      const ca = ta.tuition + ta.years * (A.f2 ?? 0), cb = tb.tuition + tb.years * (B.f2 ?? 0);
+      const cheaper = ca <= cb ? shortName(A.n) : shortName(B.n);
+      return {
+        head: [`Gap for ${num(v.credits)} credits, fees included: ${cheaper} costs less`, m(Math.abs(ca - cb))],
+        hyp: `${shortName(A.n)}: ${ta.how}. ${shortName(B.n)}: ${tb.how}.`,
+        rows: [[shortName(A.n), m(ca)], [shortName(B.n), m(cb)], [`Award rate, ${shortName(A.n)}`, A.om8 != null ? pct(A.om8, 0) : 'not reported'], [`Award rate, ${shortName(B.n)}`, B.om8 != null ? pct(B.om8, 0) : 'not reported']],
+        note: `${RATE_NOTE} Award rate: students who started in 2017-18, 8 years later (College Scorecard).`,
+      };
+    },
+  },
+};
+
+export function getSpec(kind: string, _lang?: string): MiniSpec {
+  const s = SPECS[kind];
+  if (!s) throw new Error(`Unknown mini spec: ${kind}`);
+  return s;
+}
+export const SPEC_IDS = Object.keys(SPECS);
+export { sector };
