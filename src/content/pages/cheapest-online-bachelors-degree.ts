@@ -1,6 +1,7 @@
 import { definePage } from '../../lib/guide-types';
 import { CHEAPEST4, CHEAPEST_OUT } from '../../lib/data';
 import { formatMoney } from '../../lib/format';
+import { degreeAtPace } from '../../lib/pace';
 
 const $ = (n: number) => formatMoney(Math.round(n), 0);
 const a = CHEAPEST4[0];
@@ -33,11 +34,11 @@ export default definePage({
     return `
 <h2>Cheapest online bachelor’s degree for state residents</h2>
 <p>Fifteen universities, ranked on the resident price per credit with fees. The 120-credit column multiplies that price by 120 and assumes no transfer credit.</p>
-${h.table(['University', 'State', 'Tuition per credit', 'With fees', '120 credits', 'Award in 8 years'], res, `Resident charges ${h.P.ipeds.chargesYear} (IPEDS). Award rate: students who entered in ${h.P.scorecard.awardCohort}, College Scorecard.`, ['l', 'l', 'r', 'r', 'r', 'r'])}
+${h.table(['University', 'State', 'Tuition per credit', 'With fees', '120 credits', 'Finished within 8 years'], res, `Resident charges ${h.P.ipeds.chargesYear} (IPEDS). Award rate: students who entered in ${h.P.scorecard.awardCohort}, College Scorecard.`, ['l', 'l', 'r', 'r', 'r', 'r'])}
 <p>Public universities of North Carolina, Georgia and Florida fill most of the list, the first two at ${h.m(h.D.CHEAPEST4[0]?.h2 ?? 0)} a credit of tuition for residents. If you live in one of those states, start there. If not, the next list is yours.</p>
 <h2>Cheapest for students from any state</h2>
-<p>Ranked on the out-of-state price per credit with fees. “Same price” says whether residents and non-residents pay the same.</p>
-${h.table(['University', 'State', 'Out-of-state per credit', 'Same price', '120 credits', 'Award in 8 years'], out, `Out-of-state charges ${h.P.ipeds.chargesYear} (IPEDS), out-of-state fees where reported.`, ['l', 'l', 'r', 'r', 'r', 'r'])}
+<p>Ranked on the 120-credit total, out-of-state tuition plus fees: a low price per credit can come with high yearly fees, so the order does not always follow the price column. “Same price” says whether residents and non-residents pay the same tuition.</p>
+${h.table(['University', 'State', 'Out-of-state per credit', 'Same price', '120 credits', 'Finished within 8 years'], out, `Out-of-state charges ${h.P.ipeds.chargesYear} (IPEDS), out-of-state fees where reported.`, ['l', 'l', 'r', 'r', 'r', 'r'])}
 <p>Public universities in Nebraska and Wisconsin appear here because they report the same per-credit price for residents and non-residents. Private universities appear too: they charge everyone the same, wherever the student lives.</p>
 <h2>What a 120-credit price leaves out</h2>
 <p>Books, software and proctored exams; any program fee for nursing, education or engineering majors; and the price change since ${h.P.ipeds.chargesYear}, since most colleges raise tuition a little each year. Credits you already have lower the total; ${h.a('accredited-online-colleges', 'the transfer calculator')} shows by how much. To see how your pace changes the bill, use the ${h.a('online-bachelors-degree', 'online bachelor’s degree page')}.</p><h2>A 120-credit bachelor’s in four budgets</h2>
@@ -45,8 +46,8 @@ ${h.table(['University', 'State', 'Out-of-state per credit', 'Same price', '120 
 <ul>
 <li><strong>Cheapest for a resident</strong>: ${h.B.name(c4.n)}, about ${h.m((c4.eff ?? 0) * 120)}.</li>
 <li><strong>Cheapest from any state</strong>: ${h.B.name(co.n)}, about ${h.m((co.effo ?? 0) * 120)}.</li>
-<li><strong>Median public university, resident</strong>: about ${h.m(120 * h.N.medPub4 + 4 * h.N.medFeePub4)}.</li>
-<li><strong>Median private nonprofit university</strong>: about ${h.m(120 * h.N.medNpf4 + 4 * h.N.medFeeNpf4)}.</li>
+<li><strong>Median public university, resident</strong>: about ${h.m(degreeAtPace(h.N.medPub4, h.N.medFeePub4, h.P.credits.bachelor).net)}.</li>
+<li><strong>Median private nonprofit university</strong>: about ${h.m(degreeAtPace(h.N.medNpf4, h.N.medFeeNpf4, h.P.credits.bachelor).net)}.</li>
 </ul>
 <p>The first two lines are real universities with real online enrollment, not a theory. Before choosing one, check three things on its site: that your major is offered fully online, that it accepts students from your state, and that the online program is billed at the rate the federal file shows. A university can only report one undergraduate rate per residency to IPEDS, while its online programs sometimes have their own price list.</p>
 <p>One last check is the calendar. Many of the universities in the first table run online courses on the same semester calendar as their campus, with two starts a year; others offer eight-week terms and six starts. The price per credit is the same either way, but a shorter term lets you take one course at a time and keep a full-time job.</p>

@@ -32,7 +32,7 @@ export default definePage({
 ${h.table(['University', 'Per graduate credit', '36 credits', 'Graduate students fully online'], rows, `In-state graduate charge for part-time students, ${h.P.ipeds.chargesYear}; enrollment ${h.P.ipeds.enrollmentTerm} (IPEDS).`, ['l', 'r', 'r', 'r'])}
 <p>A flat-rate university reports no per-credit graduate charge and is missing here; its yearly price is on the ${h.a('largest-online-universities', 'largest online universities page')}.</p>
 <h2>Graduate fees and the rest</h2>
-<p>The federal file has no median graduate fee: universities report fees for undergraduates only. Read the program’s page for technology, program and graduation fees, and type them under “More details”. Some programs also charge for a residency week or a capstone project.</p>
+<p>The federal file has no median graduate fee: universities report fees for undergraduates only. Read the program’s page for technology, program and graduation fees, and type them under “More about your case”. Some programs also charge for a residency week or a capstone project.</p>
 <h2>Paying for it</h2>
 <p>Graduate students can borrow federal loans after filing the FAFSA, but Pell Grants are for undergraduates. Employer help, assistantships and scholarships from the university are the main grants at this level. The ${h.a('online-colleges-that-accept-fafsa', 'federal aid page')} explains what every college counted here must accept.</p><h2>Online masters degree budgets compared</h2>
 <p>The same 36 credits at the median graduate price of each type of university, before fees:</p>

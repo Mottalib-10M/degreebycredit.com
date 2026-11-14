@@ -41,7 +41,7 @@ export function mostTable(h: T, f: FieldKey, l: ProgLevel, n: number, caption: s
   const s = lvl(f, l);
   const grad = isGrad(l);
   const rows = s.most.slice(0, n).map((c) => [shortName(c.n), c.st, num(c.k), m(grad ? c.p : c.pe), c.om8 != null ? pct(c.om8, 0) : 'n/a']);
-  return h.table(['College', 'State', 'Programs fully online', grad ? 'Graduate per credit' : 'Per credit with fees', 'Award within 8 years'], rows, caption, ['l', 'l', 'r', 'r', 'r']);
+  return h.table(['College', 'State', 'Programs fully online', grad ? 'Graduate per credit' : 'Per credit with fees', 'Finished within 8 years'], rows, caption, ['l', 'l', 'r', 'r', 'r']);
 }
 
 /** States with the most colleges offering the field fully online at that level, with the lowest public price there. */

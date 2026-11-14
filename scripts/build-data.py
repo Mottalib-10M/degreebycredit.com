@@ -129,10 +129,12 @@ def main():
     colleges.sort(key=lambda r: (-(r['exc'] or 0), r['n']))
 
     def eff(r):
-        """In-state per-credit charge plus the year's required fees spread over 30 credits, rounded to the dollar."""
+        """In-state per-credit charge plus the year's required fees spread over 30 credits, kept to the cent.
+        Rounded to the dollar here, it made 120 × eff differ from the calculator's 120 × charge + 4 years of fees
+        ($14,640 against $14,688 for the same university, naive testers 2026-11-14): pages round only when they print."""
         if not r.get('h2'):
             return None
-        return round(r['h2'] + (r['f2'] or 0) / 30)
+        return round(r['h2'] + (r['f2'] or 0) / 30, 2)
 
     def state_block(code):
         """Per-state figures; `cheapest` = lowest per-credit charge plus fees spread over 30 credits."""
@@ -239,7 +241,7 @@ def main():
     # or two bachelor's programs are left out). Out-of-state list: charge for a student from another state, same rule.
     bpool = [r for r in pool if r['cat'] == 2]
     cheapest4 = [slim(r) for r in sorted(bpool, key=lambda r: (eff(r), -(r['exc'] or 0)))[:40]]
-    effo = lambda r: round(r['h3'] + (r['f3'] if r['f3'] is not None else (r['f2'] or 0)) / 30)
+    effo = lambda r: round(r['h3'] + (r['f3'] if r['f3'] is not None else (r['f2'] or 0)) / 30, 2)
     cheapestOut = [slim(r) | {'effo': effo(r)} for r in sorted([r for r in bpool if r['h3']], key=lambda r: (effo(r), -(r['exc'] or 0)))[:40]]
     json.dump(cheapestOut, open(os.path.join(OUT, 'cheapest-out.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     json.dump(cheapest4, open(os.path.join(OUT, 'cheapest4.json'), 'w'), ensure_ascii=False, separators=(',', ':'))

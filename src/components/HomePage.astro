@@ -14,35 +14,40 @@ import { PAGES } from '../lib/guides';
 import { groupLabel, GROUPS_ORDER } from '../i18n/nav';
 import { helpers } from '../lib/helpers';
 import { AUTHOR_NAME } from '../data/site-config';
+import { degreeAtPace, PACE } from '../lib/pace';
 import { faqSchema, webApplicationSchema, websiteSchema, organizationSchema } from '../lib/seo';
 const lang = 'en';
 const h = helpers(true);
 const { P, N, D, B, E, m, num, pc } = h;
 
-const bach = E.degreeCost({ perCredit: N.medPub4, credits: P.credits.bachelor, transfer: 0, feesPerYear: N.medFeePub4, creditsPerTerm: 15, termsPerYear: 2, grantsPerYear: 0 });
+// One pace and one function for the calculator, this table and the FAQ (tests/coherence.test.ts).
+const B120 = P.credits.bachelor;
+const bach = degreeAtPace(N.medPub4, N.medFeePub4, B120);
+const yearsAtPace = bach.years;
+const total = (rate: number, fees: number) => m(degreeAtPace(rate, fees, B120).net);
 const shareOnline = N.exc / N.tot;
 const types = [
-  ['Public university, state resident', m(N.medPub4), m(N.medFeePub4), m(N.medPub4 * 120 + 4 * N.medFeePub4)],
-  ['Public university, from another state', m(N.medPub4out), m(N.medFeePub4), m(N.medPub4out * 120 + 4 * N.medFeePub4)],
-  ['Private nonprofit university', m(N.medNpf4), m(N.medFeeNpf4), m(N.medNpf4 * 120 + 4 * N.medFeeNpf4)],
-  ['Private for-profit university', m(N.medFp4), m(N.medFeeFp4), m(N.medFp4 * 120 + 4 * N.medFeeFp4)],
+  ['Public university, state resident', m(N.medPub4), m(N.medFeePub4), total(N.medPub4, N.medFeePub4)],
+  ['Public university, from another state', m(N.medPub4out), m(N.medFeePub4), total(N.medPub4out, N.medFeePub4)],
+  ['Private nonprofit university', m(N.medNpf4), m(N.medFeeNpf4), total(N.medNpf4, N.medFeeNpf4)],
+  ['Private for-profit university', m(N.medFp4), m(N.medFeeFp4), total(N.medFp4, N.medFeeFp4)],
 ];
 const largest = D.FEATURED.slice().sort((a, b) => (b.exc ?? 0) - (a.exc ?? 0)).slice(0, 12).map((f) => [
   `${B.name(f.n)}<br><span class="text-xs text-navy-600">${f.st}, ${E.SECTOR_LABEL[f.ctrl] ?? ''}</span>`,
   num(f.exc ?? 0),
-  f.h2 ? `${m(f.h2)} a credit` : `${m(f.t2 ?? 0)} a year, flat`,
+  f.h2 ? `${m(f.h2)} a credit` : `${m(f.t2 ?? 0)} a year, same price whatever the credits`,
   m(B.schoolCost(f, 120).total),
   f.om8 != null ? pc(f.om8, 0) : 'n/a',
 ]);
 const topStates = Object.values(D.STATES).sort((a, b) => b.exc - a.exc).slice(0, 8);
 const figures = [
   { fig: num(N.exc), what: `students studying fully online in ${P.ipeds.enrollmentTerm}, ${pc(shareOnline, 0)} of all college students` },
-  { fig: num(N.nOnline), what: 'colleges with at least 50 of them, all eligible for federal student aid' },
-  { fig: m(N.medPub4), what: 'median price per credit at a public university, for state residents' },
-  { fig: `${num(E.finishers(100, N.medOm8Online))} of 100`, what: 'students at mostly online colleges with a degree or certificate 8 years after starting' },
+  { fig: num(N.nOnline), what: `colleges with at least 50 of them, all eligible for federal student aid; ${num(N.nQ)} of them publish a price per credit, the colleges every “of ${num(N.nQ)}” on this site refers to` },
+  { fig: m(N.medPub4), what: 'typical price per credit at a public university for residents of its state (median: half charge less, half more)' },
+  { fig: `${num(E.finishers(100, N.medOm8Online))} of 100`, what: 'students at mostly online colleges who finished a degree or certificate within 8 years of starting' },
 ];
 const faqs = [
-  { q: 'How much does an online degree cost in total?', a: `At the median public university, a 120-credit bachelor’s comes to about ${m(bach.gross)} for a state resident: ${m(bach.tuition)} of tuition and ${m(bach.fees)} of required fees over four years. The same degree from another state costs about ${m(N.medPub4out * 120 + 4 * N.medFeePub4)}. Credits you already have, grants and your pace change the total; the calculator above counts all three.` },
+  { q: 'How much does an online degree cost in total?', a: `At the median public university, a 120-credit bachelor’s comes to about ${m(bach.gross)} for a state resident: ${m(bach.tuition)} of tuition and ${m(bach.fees)} of required fees over ${num(yearsAtPace)} years. The same degree from another state costs about ${total(N.medPub4out, N.medFeePub4)}. Credits you already have, grants and your pace change the total; the calculator above counts all three.` },
   { q: 'Is an online degree cheaper than a campus degree?', a: 'Tuition is often the same: most colleges report one price per credit, whatever the format. The savings come from elsewhere: no room and board, no move, and the chance to keep working. Some universities charge online students a separate rate, higher or lower, so compare the program’s own tuition page with the figures here.' },
   { q: 'Where do these prices come from?', a: `From IPEDS, the federal survey every college that takes student aid must answer, for the ${P.ipeds.chargesYear} academic year, and from College Scorecard for award rates, Pell shares, debt and accreditors. Nothing is taken from college rankings or lead-generation sites, and no school pays to appear on this site.` },
   { q: 'Can I use federal student aid for an online degree?', a: `Yes, at any of the ${num(N.n)} colleges counted here: all of them take part in the federal aid programs. The aid itself depends on your FAFSA, the program and how many credits you take each term. The page on colleges that accept FAFSA explains the Pell Grant and what it covers.` },
@@ -52,12 +57,12 @@ const faqs = [
 const resume = `An online degree is priced by the credit. Colleges that take federal student aid report their per-credit charge to IPEDS, the national survey of colleges run by the National Center for Education Statistics, and for ${P.ipeds.chargesYear} the median public university charged its own residents ${m(N.medPub4)} a credit, against ${m(N.medPub4out)} for students from other states, ${m(N.medNpf4)} at private nonprofit universities and ${m(N.medFp4)} at for-profit ones. A bachelor’s degree asks for about 120 credits, an associate degree about 60 and a master’s 30 to 36, so the price per credit decides most of the bill. Required fees add a few hundred to a few thousand dollars a year, transfer credits come off the total, and grants such as the Pell Grant reduce what you pay. ${num(N.exc)} students, ${pc(shareOnline, 0)} of all college students, took every course at a distance in ${P.ipeds.enrollmentTerm}.`;
 const jsonLd = [webApplicationSchema({ name: 'Online degree cost calculator', description: 'Tuition and fees of an online associate, bachelor’s or master’s degree from the per-credit charges US colleges report to IPEDS, with transfer credits, pace and grants.', path: route('home', lang), lang }), websiteSchema(lang), organizationSchema(lang), faqSchema(faqs, lang)];
 const groups = GROUPS_ORDER.map((g) => ({ g, pages: PAGES.filter((p) => p.group === g) })).filter((x) => x.pages.length);
-const title = `Online Degree Cost 2026: Price per Credit at ${num(N.n)} Colleges`;
+const title = `Online Degree Cost 2026: Price per Credit at ${num(N.nQ)} Colleges`;
 ---
-<PageLayout title={title} description={`Online degree cost from the price per credit ${num(N.n)} US colleges report to the federal IPEDS file: your degree, your state, your transfer credits and grants.`} lang={lang} jsonLd={jsonLd} faqs={faqs.map((f, i) => ({ ...f, open: i < 2 }))}>
+<PageLayout title={title} description={`Online degree cost from the price per credit ${num(N.nQ)} US online colleges report to the federal IPEDS survey: your degree, school type, transfer credits and grants.`} lang={lang} jsonLd={jsonLd} faqs={faqs.map((f, i) => ({ ...f, open: i < 2 }))}>
   <header class="mb-3">
     <h1 class="text-[1.75rem] font-bold text-navy-900 max-sm:leading-tight sm:text-3xl">Online degree cost: your degree, credit by credit, at the price colleges report</h1>
-    <p class="mt-2 text-base text-navy-700 sm:text-lg">Online degree cost is the price per credit times the credits you still need. Public universities charge state residents a median of {m(N.medPub4)} a credit, about {m(N.medPub4 * 120)} for a 120-credit bachelor’s before fees. Pick your degree and type of school below; nothing you type is sent.</p>
+    <p class="mt-2 text-base text-navy-700 sm:text-lg">Online degree cost is the price per credit times the credits you still need. A credit is about one hour of class a week for one term; a bachelor’s degree takes about {num(B120)}. Public universities charge residents of their state a typical (median) {m(N.medPub4)} a credit, so about {m(N.medPub4 * B120)} before fees. Nothing you type is sent.</p>
     <p class="mt-1 text-xs text-navy-600">Independent site: not a college, not a lead seller, not affiliated with the U.S. Department of Education or any school named.</p>
   </header>
   <div data-outil class="mb-4"><Tool tool={{ kind: 'mini:degree-cost' }} primary={true} /></div>
@@ -73,8 +78,8 @@ const title = `Online Degree Cost 2026: Price per Credit at ${num(N.n)} Colleges
 
   <div class="prose prose-slate max-w-none">
     <h2>Online degree cost by type of school</h2>
-    <p>The type of college sets the order of magnitude before anything else. The table gives the median per-credit charge of each type, its median yearly fees, and what that comes to for a 120-credit bachelor’s with four years of fees. It is a sticker price: grants and transfer credits come off it, and room and board are not part of an online student’s bill.</p>
-    <Fragment set:html={h.table(['Type of university', 'Per credit', 'Fees per year', '120 credits, 4 years of fees'], types, `Medians of the ${P.ipeds.chargesYear} charges reported to IPEDS by four-year colleges. Undergraduate per-credit charge for part-time students; required fees for full-time students.`, ['l', 'r', 'r', 'r'])} />
+    <p>The type of college sets the rough price before anything else. The table gives the median per-credit charge of each type, its median yearly fees, and what that comes to for a 120-credit bachelor’s with {num(yearsAtPace)} years of fees, at {num(PACE.creditsPerTerm)} credits a term, the same pace and the same totals as the calculator above. It is the full listed price: grants and transfer credits come off it, and room and board are not part of an online student’s bill.</p>
+    <Fragment set:html={h.table(['Type of university', 'Per credit', 'Fees per year', `120 credits, ${num(yearsAtPace)} years of fees`], types, `Medians of the ${P.ipeds.chargesYear} charges reported to IPEDS by four-year colleges. Undergraduate per-credit charge for part-time students; required fees for full-time students.`, ['l', 'r', 'r', 'r'])} />
     <p>Community colleges are cheaper still: a median of {m(N.medPub2d)} a credit for residents of their district and {m(N.medPub2)} for the rest of the state, which is why many students take their first 60 credits there. The <a href={route('online-associates-degree', lang)}>associate degree page</a> shows what that route saves on a bachelor’s.</p>
 
     <h2>Five steps to a budget you can trust</h2>
@@ -85,8 +90,8 @@ const title = `Online Degree Cost 2026: Price per Credit at ${num(N.n)} Colleges
     <p><strong>5. Take off grants, not loans.</strong> A Pell Grant, a state grant or employer tuition help lowers the price; a loan only spreads it out. The calculator’s “grants per year” line is for money you never repay.</p>
 
     <h2>The twelve largest online schools, side by side</h2>
-    <p>Twelve institutions teach close to a million fully online students between them. The table gives what each one reports: its price per credit for residents, or its flat yearly price, and the share of entering students who earned a degree or certificate within eight years.</p>
-    <Fragment set:html={h.table(['School', 'Fully online students', 'Price reported', '120 credits with fees', 'Award in 8 years'], largest, `Enrollment ${P.ipeds.enrollmentTerm} and charges ${P.ipeds.chargesYear} (IPEDS); award rate of students who entered in ${P.scorecard.awardCohort} (College Scorecard). Flat-rate schools: yearly price at 30 credits a year.`, ['l', 'r', 'r', 'r', 'r'])} />
+    <p>Twelve institutions teach close to a million fully online students between them. The table gives what each one reports: its price per credit for residents, or its single yearly price whatever the credits, and the share of entering students who earned a degree or certificate within eight years.</p>
+    <Fragment set:html={h.table(['School', 'Fully online students', 'Price reported', '120 credits with fees', 'Finished within 8 years'], largest, `Enrollment ${P.ipeds.enrollmentTerm} and charges ${P.ipeds.chargesYear} (IPEDS); award rate of students who entered in ${P.scorecard.awardCohort} (College Scorecard). Schools with one price per year whatever the credits: that yearly price, at 30 credits a year. “Finished within 8 years”: share of entering students with a degree or certificate from the school 8 years later.`, ['l', 'r', 'r', 'r', 'r'])} />
     <p>Size says nothing about price or results: the table holds both the cheapest and some of the most expensive per-credit prices on this site. The <a href={route('largest-online-universities', lang)}>largest online universities page</a> compares any two of the twenty largest in a calculator.</p>
 
     <h2>Where online students live and study</h2>

@@ -40,10 +40,15 @@ const sources: Src[] = Object.values((P as { sources?: Record<string, Src> }).so
     {/* Gabarit littéral : « {A} {B} » perdait l'espace au rendu (« read on2026-11-07 ») et la date restait
          au format machine (financecertcost.com, dumpfeesbystate.com, testeurs naïfs du 2026-11-08). */}
     <p>{`${intro ?? INTRO[lang] ?? INTRO.en} ${/^\d{4}-\d{2}-\d{2}$/.test(P.retrieved_at) ? displayDate(P.retrieved_at, LANG_TAGS[lang] ?? lang) : P.retrieved_at}.`}</p>
-    <ul>
-      {sources.map((s) => (
-        <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label[lang] ?? s.label.en}</a></li>
-      ))}
-    </ul>
+    {/* Twenty file names (« IC2023_AY … (zip) ») over four phone screens drove all three naive testers away
+         (2026-11-14): the list is folded, kept whole in the HTML. */}
+    <details class="sources-repli">
+      <summary class="cursor-pointer font-medium text-accent-700">{lang === 'en' ? `Show the ${sources.length} official files and pages (U.S. Department of Education)` : `${H2[lang] ?? H2.en} (${sources.length})`}</summary>
+      <ul>
+        {sources.map((s) => (
+          <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.label[lang] ?? s.label.en}</a></li>
+        ))}
+      </ul>
+    </details>
   </>
 )}

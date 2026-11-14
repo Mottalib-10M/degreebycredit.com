@@ -10,7 +10,17 @@ import { etiquettes } from './tableaux';
 export { pct };
 
 const esc = (s: string | number) => String(s).replace(/&(?!(?:[a-z]+|#\d+);)/g, '&amp;').replace(/</g, '&lt;');
+/** Rows shown before a long table folds (naive testers, 2026-11-14: 50 state cards made 14 phone screens). */
+const FOLD_AFTER = 10, SHOWN = 5;
 export function table(headers: string[], rows: Array<Array<string | number>>, caption?: string, align: Array<'l' | 'r'> = []) {
+  // A long table shows its first rows; the rest stays in the HTML, folded under one line that says how many.
+  if (rows.length > FOLD_AFTER) {
+    const rest = rows.slice(SHOWN);
+    return `${tableOne(headers, rows.slice(0, SHOWN), caption, align)}<details class="not-prose tableau-repli my-2"><summary class="cursor-pointer text-sm font-medium text-accent-700">Show the other ${rest.length} rows</summary>${tableOne(headers, rest, undefined, align)}</details>`;
+  }
+  return tableOne(headers, rows, caption, align);
+}
+function tableOne(headers: string[], rows: Array<Array<string | number>>, caption?: string, align: Array<'l' | 'r'> = []) {
   const al = (i: number) => (align[i] === 'r' ? 'text-right' : 'text-left');
   // On a phone each row becomes a card (class `empile`, global.css): columns cut at the right edge were
   // the first complaint of all three naive testers on 2026-11-08, scroll shadow or not.

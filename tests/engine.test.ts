@@ -1,5 +1,6 @@
 /** Engine tests (RECETTE §17): every formula of lib/engine/degree.ts recomputed by hand. */
 import { describe, it, expect } from 'vitest';
+import { P } from '../src/lib/engine/params';
 import * as E from '../src/lib/engine/degree';
 import { getSpec, SPEC_IDS } from '../src/lib/mini-specs';
 import { NAT, COLLEGES, STATES, CHEAPEST4, CHEAPEST_OUT, FEATURED } from '../src/lib/data';
@@ -95,7 +96,7 @@ describe('calculators', () => {
   it('degree-cost default = median public bachelor’s with median fees', () => {
     const s = getSpec('degree-cost');
     const v = Object.fromEntries(s.inputs.map((i) => [i.id, i.def]));
-    const r = E.degreeCost({ perCredit: NAT.medPub4, credits: 120, transfer: 0, feesPerYear: NAT.medFeePub4, creditsPerTerm: 12, termsPerYear: 2, grantsPerYear: 0 });
+    const r = E.degreeCost({ perCredit: NAT.medPub4, credits: 120, transfer: 0, feesPerYear: NAT.medFeePub4, creditsPerTerm: P.defaults.creditsPerTerm, termsPerYear: P.defaults.termsPerYear, grantsPerYear: 0 });
     expect(s.run(v, {}).head[1]).toBe(`$${Math.round(r.net).toLocaleString('en-US')}`);
   });
 });

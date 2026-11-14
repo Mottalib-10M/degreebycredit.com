@@ -10,6 +10,7 @@ import { NATB as N, FEATURED_B, CHEAP4_B, STATES_B, PROG_B, shortName, sector } 
 import metaRaw from '../data/data-meta.json';
 import { formatMoney as fm, formatNumber } from './format';
 import { pct } from './pct';
+import { degreeAtPace, PACE } from './pace';
 
 const m = (n: number) => fm(Math.round(n), 0);
 const num = (n: number) => formatNumber(n, 0);
@@ -18,7 +19,7 @@ const NX = (metaRaw as any).national as { nPub2: number; nPub4: number; nSameOut
 const money = (id: string, label: string, def: number, help?: string, avance = false): MiniInput => ({ id, label, def, unit: '$', max: 1_000_000, help, ...(avance ? { avance } : {}) });
 const count = (id: string, label: string, def: number, max: number, help?: string, avance = false): MiniInput => ({ id, label, def, max, help, ...(avance ? { avance } : {}) });
 const opt = (labels: string[]) => labels.map((label, i) => ({ value: String(i), label }));
-const IPEDS = `IPEDS ${P.ipeds.chargesYear}`;
+const IPEDS = `federal IPEDS college survey, ${P.ipeds.chargesYear}`;
 const RATE_NOTE = `Charges reported by each college to IPEDS for ${P.ipeds.chargesYear}. Some colleges bill online students a separate rate: the school’s own tuition page is the one that counts.`;
 
 const LEVELS = [
@@ -31,12 +32,12 @@ const LEVELS = [
 function median(level: number, s: number): { rate: number; fees: number; what: string; n: string } {
   const grad = level === 2;
   const two = level === 0 || level === 3;
-  if (s === 0) return grad ? { rate: N.medGradPub, fees: 0, what: 'a public university in your state', n: 'graduate rate of public universities' } : two ? { rate: N.medPub2, fees: N.medFeePub2, what: 'a public community college in your state', n: `${num(NX.nPub2)} public two-year colleges` } : { rate: N.medPub4, fees: N.medFeePub4, what: 'a public university in your state', n: `${num(NX.nPub4)} public four-year colleges` };
+  if (s === 0) return grad ? { rate: N.medGradPub, fees: 0, what: 'public universities for their own state’s residents (national median)', n: 'graduate rate of public universities' } : two ? { rate: N.medPub2, fees: N.medFeePub2, what: 'community colleges for their own state’s residents (national median)', n: `${num(NX.nPub2)} public two-year colleges` } : { rate: N.medPub4, fees: N.medFeePub4, what: 'public universities for their own state’s residents (national median)', n: `${num(NX.nPub4)} public four-year colleges` };
   if (s === 1) return grad ? { rate: NX.medGradPubOut, fees: 0, what: 'a public university in another state', n: 'out-of-state graduate rate of public universities' } : two ? { rate: N.medPub2out, fees: N.medFeePub2, what: 'a public community college in another state', n: 'out-of-state rate of public two-year colleges' } : { rate: N.medPub4out, fees: N.medFeePub4, what: 'a public university in another state', n: 'out-of-state rate of public four-year colleges' };
   if (s === 2) return { rate: grad ? N.medGradNpf : N.medNpf4, fees: grad ? 0 : N.medFeeNpf4, what: 'a private nonprofit college', n: grad ? 'graduate rate of private nonprofit colleges' : 'private nonprofit four-year colleges' };
   return { rate: grad ? N.medGradFp : N.medFp4, fees: grad ? 0 : N.medFeeFp4, what: 'a for-profit college', n: grad ? 'graduate rate of for-profit colleges' : 'for-profit four-year colleges' };
 }
-const SECTOR_OPTS = opt(['Public, in my state', 'Public, in another state', 'Private nonprofit', 'Private for-profit', 'I know my school’s price']);
+const SECTOR_OPTS = opt(['Public, in-state price', 'Public, out-of-state price', 'Private nonprofit', 'Private for-profit', 'I know my school’s price']);
 const TERMS = [{ value: '2', label: '2 terms (semesters)' }, { value: '3', label: '3 terms (trimesters)' }, { value: '4', label: '4 terms (quarters)' }, { value: '6', label: '6 terms (8-week terms)' }];
 const pickFeatured = opt(FEATURED_B.map((f) => shortName(f.n)));
 /** Tuition of `credits` at a featured school: per credit, or its flat yearly price at 30 credits a year. */
@@ -51,17 +52,17 @@ const TX = Math.max(0, STATES_B.findIndex((s) => s.code === 'TX'));
 const SPECS: Record<string, MiniSpec> = {
   'degree-cost': {
     title: 'What will your online degree cost?',
-    exemple: 'Example: bachelor’s degree at the median public college in your state',
+    exemple: 'Example: bachelor’s degree at the typical in-state price of public universities (national median), 4 years',
     cta: 'Price per credit, college by college', ctaPage: 'cost-per-credit-hour',
     inputs: [
       { id: 'level', label: 'Degree', def: 1, options: opt(LEVELS.map((l) => `${l.name.charAt(0).toUpperCase()}${l.name.slice(1)} (${l.credits} credits)`)) },
-      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in my state”: the median of what public colleges charge their own residents.' },
+      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in-state price”: the typical price US public colleges charge residents of their own state (national median: half charge less, half more).' },
       { ...money('rate', 'Your school’s price per credit', N.medPub4, 'On the school’s tuition page, “per credit hour”.'), showIf: (v) => v.sector === 4 },
       { ...money('fees', 'Required fees per year', N.medFeePub4, 'Technology, online or student fees. Not sure? Leave the median shown.'), showIf: (v) => v.sector === 4 },
       count('transfer', 'Credits you already have (transfer)', 0, 200, 'Credits from an earlier college, an exam or the military that the school accepts. Not sure? Leave 0.'),
       money('grants', 'Grants per year (Pell, state, employer)', 0, 'Money you do not repay. Not sure? Leave 0: the total is then the full price.', true),
-      count('perTerm', 'Credits per term', P.defaults.creditsPerTerm, 30, '12 is full time at most schools; 6 is half time.', true),
-      { id: 'terms', label: 'Terms per year', def: P.defaults.termsPerYear, options: TERMS, avance: true },
+      count('perTerm', 'Credits per term', PACE.creditsPerTerm, 30, '15 a term finishes a bachelor’s in 4 years; 12 is the full-time minimum; 6 (two courses) is half time.', true),
+      { id: 'terms', label: 'Terms per year', def: PACE.termsPerYear, options: TERMS, avance: true },
     ],
     run: (v, touched = {}) => {
       const L = LEVELS[v.level] ?? LEVELS[1];
@@ -78,7 +79,7 @@ const SPECS: Record<string, MiniSpec> = {
       rows.push(['Time to finish at your pace', yrs(Math.round(r.yearsExact * 10) / 10)], ['Per month while you study', m(r.perMonth)]);
       return {
         head: [`Online ${L.name}: tuition and fees${r.grants > 0 ? ' after grants' : ''}`, m(r.net)],
-        hyp: own ? `Assumes your price, ${num(v.perTerm)} credits a term and ${num(v.terms)} terms a year.` : `Assumes the median charge of ${md.what} (${IPEDS}), ${num(v.perTerm)} credits a term.`,
+        hyp: own ? `Assumes your price, ${num(v.perTerm)} credits a term and ${num(v.terms)} terms a year.` : `Assumes ${m(rate)} a credit, the national median charge of ${md.what.replace(' (national median)', '')} (${IPEDS}), and ${num(v.perTerm)} credits a term, ${num(v.terms)} terms a year.`,
         alert: v.level === 2 && !own ? 'Graduate fees are not in the federal file: add them with “I know my school’s price”.' : undefined,
         rows, note: RATE_NOTE,
       };
@@ -145,11 +146,11 @@ const SPECS: Record<string, MiniSpec> = {
       const c = CHEAP4_B[v.school] ?? CHEAP4_B[0];
       const out = v.res === 1;
       const rate = out ? (c.h3 ?? c.h2 ?? 0) : (c.h2 ?? 0);
-      const r = E.degreeCost({ perCredit: rate, credits: P.credits.bachelor, transfer: v.transfer, feesPerYear: c.f2 ?? 0, creditsPerTerm: 15, termsPerYear: 2, grantsPerYear: 0 });
+      const r = degreeAtPace(rate, c.f2 ?? 0, P.credits.bachelor, v.transfer);
       return {
         head: [`${shortName(c.n)}, ${out ? 'from another state' : 'state resident'}`, m(r.net)],
         hyp: `Assumes ${m(rate)} a credit, ${m(c.f2 ?? 0)} of fees a year and 30 credits a year.`,
-        rows: [[`${num(r.remaining)} credits × ${m(rate)}`, m(r.tuition)], [`Fees, ${yrs(r.years)}`, m(r.fees)], ['Students studying fully online', c.exc ? num(c.exc) : 'not reported'], ['Award within 8 years of starting', c.om8 != null ? pct(c.om8, 0) : 'not reported']],
+        rows: [[`${num(r.remaining)} credits × ${m(rate)}`, m(r.tuition)], [`Fees, ${yrs(r.years)}`, m(r.fees)], ['Students studying fully online', c.exc ? num(c.exc) : 'not reported'], ['Finished within 8 years of starting', c.om8 != null ? pct(c.om8, 0) : 'not reported']],
         note: RATE_NOTE,
       };
     },
@@ -254,7 +255,7 @@ const SPECS: Record<string, MiniSpec> = {
       const fin = E.finishers(100, rate);
       return {
         head: [`${who}: students with a degree or certificate 8 years after starting`, `${num(fin)} of 100`],
-        hyp: `Award rate ${pct(rate, 0)}, all entering students, College Scorecard.`,
+        hyp: `Finished within 8 years: ${pct(rate, 0)} of all entering students, College Scorecard.`,
         rows: [['Colleges with mostly on-campus students, median', `${num(E.finishers(100, N.medOm8Campus))} of 100`], ['Spent by a student who leaves after one year', m(v.year)], ['After two years', m(2 * v.year)]],
         note: `Students who entered in 2017-18, followed for eight years (College Scorecard, released ${P.scorecard.release}).`,
       };
@@ -279,7 +280,7 @@ const SPECS: Record<string, MiniSpec> = {
       return {
         head: [`Master’s degree, ${num(v.credits)} credits${r.grants ? ', after employer help' : ''}`, m(r.net)],
         hyp: v.sector === 4 ? `Assumes your price of ${m(rate)} a credit.` : `Assumes the median graduate charge of ${md.what}, ${m(rate)} a credit (${IPEDS}).`,
-        alert: v.fees > 0 ? undefined : 'Fees not counted: add them under “More details”.',
+        alert: v.fees > 0 ? undefined : 'Fees not counted: add them under “More about your case”.',
         rows: [['Tuition', m(r.tuition)], ['Time to finish', yrs(r.years)], ['Employer help', r.grants ? `− ${m(r.grants)}` : 'none typed']],
         note: RATE_NOTE,
       };
@@ -364,11 +365,13 @@ const SPECS: Record<string, MiniSpec> = {
       const ta = featuredTuition(A, v.credits), tb = featuredTuition(B, v.credits);
       const ca = ta.tuition + ta.years * (A.f2 ?? 0), cb = tb.tuition + tb.years * (B.f2 ?? 0);
       const cheaper = ca <= cb ? shortName(A.n) : shortName(B.n);
+      const dearer = ca <= cb ? shortName(B.n) : shortName(A.n);
       return {
-        head: [`Gap for ${num(v.credits)} credits, fees included: ${cheaper} costs less`, m(Math.abs(ca - cb))],
+        // The gap alone read as the price of the cheaper school (naive tester 3, 2026-11-14): say it is a difference.
+        head: [`${cheaper} costs this much less than ${dearer} for ${num(v.credits)} credits, fees included`, m(Math.abs(ca - cb))],
         hyp: `${shortName(A.n)}: ${ta.how}. ${shortName(B.n)}: ${tb.how}.`,
-        rows: [[shortName(A.n), m(ca)], [shortName(B.n), m(cb)], [`Award rate, ${shortName(A.n)}`, A.om8 != null ? pct(A.om8, 0) : 'not reported'], [`Award rate, ${shortName(B.n)}`, B.om8 != null ? pct(B.om8, 0) : 'not reported']],
-        note: `${RATE_NOTE} Award rate: students who started in 2017-18, 8 years later (College Scorecard).`,
+        rows: [[shortName(A.n), m(ca)], [shortName(B.n), m(cb)], [`Finished within 8 years, ${shortName(A.n)}`, A.om8 != null ? pct(A.om8, 0) : 'not reported'], [`Finished within 8 years, ${shortName(B.n)}`, B.om8 != null ? pct(B.om8, 0) : 'not reported']],
+        note: `${RATE_NOTE} Finished within 8 years: share of students who started in ${P.scorecard.awardCohort} with a degree or certificate 8 years later (College Scorecard).`,
       };
     },
   },
@@ -389,7 +392,7 @@ function progSpec(c: FieldCfg): MiniSpec {
     inputs: [
       ...(c.levels.length > 1 ? [{ id: 'level', label: 'Level', def: Math.max(0, c.levels.indexOf(c.main)), options: opt(c.levels.map((l) => `${lvName(l).charAt(0).toUpperCase()}${lvName(l).slice(1)} (${num(F.levels[l]?.n ?? 0)} colleges)`)) }] : []),
       { id: 'st', label: 'Your state', def: TX, options: opt(STATES_B.map((s) => s.name)) },
-      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in my state”: the median charge of the public colleges that offer this program fully online.' },
+      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in-state price”: the median charge of the public colleges that offer this program fully online.' },
       { ...money('rate', 'Your program’s price per credit', N.medPub4, 'On the program’s tuition page, “per credit hour”.'), showIf: (v) => v.sector === 4 },
       ...c.levels.map((l, i): MiniInput => ({ id: `cr${i}`, label: `Credits in the ${lvName(l).replace(/ \(.*\)$/, '')}`, def: LEVEL_CREDITS[l], max: 200, help: c.creditsHelp, ...(c.levels.length > 1 ? { showIf: (v: Record<string, number>) => (v.level ?? 0) === i } : {}) })),
       count('transfer', 'Credits you already have (transfer)', 0, 200, c.transferHelp, true),

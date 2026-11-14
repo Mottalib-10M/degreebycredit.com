@@ -4,6 +4,9 @@ import { formatNumber, parseLocaleNumber } from '../../lib/format';
 interface Props { id: string; label: string; value: number; onChange: (v: number) => void; unit?: string; min?: number; max?: number; help?: string; className?: string; decimals?: number }
 
 export default function NumberField({ id, label, value, onChange, unit = '', min = 0, max = 10_000_000, help, className = '', decimals = 0 }: Props) {
+  // « 1,210 $ » read as foreign to US readers (naive testers, 2026-11-14): a currency sign that precedes amounts in
+  // the site's language goes before the figure.
+  const before = unit === '$' || unit === '£';
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState('');
   const [over, setOver] = useState(false);
@@ -29,11 +32,11 @@ export default function NumberField({ id, label, value, onChange, unit = '', min
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-navy-700">{label}</label>
       <div className="relative self-start">
         <input ref={input} id={id} onMouseUp={(e) => { if (guardMouseUp.current) { guardMouseUp.current = false; e.preventDefault(); } }} type="text" inputMode="decimal" value={display} onChange={handleChange} onFocus={handleFocus} onBlur={handleBlur} placeholder="0" aria-describedby={help || over ? `${id}-help` : undefined}
-          className={`tabular-nums w-full rounded-lg border border-navy-300 bg-white h-12 px-4 ${unit ? 'pr-14' : ''} text-right text-lg text-navy-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20`} />
-        {unit && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-navy-500" aria-hidden="true">{unit}</span>}
+          className={`tabular-nums w-full rounded-lg border border-navy-300 bg-white h-12 px-4 ${unit ? (before ? 'pl-8' : 'pr-14') : ''} text-right text-lg text-navy-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/20`} />
+        {unit && <span className={`pointer-events-none absolute ${before ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-sm text-navy-500`} aria-hidden="true">{unit}</span>}
       </div>
       {over
-        ? <p id={`${id}-help`} role="status" className="mt-1 text-xs font-medium text-amber-700">≤ {formatNumber(max, Number.isInteger(max) ? 0 : decimals)}{unit ? ` ${unit}` : ''}</p>
+        ? <p id={`${id}-help`} role="status" className="mt-1 text-xs font-medium text-amber-700">≤ {before ? unit : ''}{formatNumber(max, Number.isInteger(max) ? 0 : decimals)}{unit && !before ? ` ${unit}` : ''}</p>
         : help && <p id={`${id}-help`} className="mt-1 text-xs text-navy-500">{help}</p>}
     </div>
   );

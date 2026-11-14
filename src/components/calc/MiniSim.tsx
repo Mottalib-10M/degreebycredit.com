@@ -102,5 +102,7 @@ export default function MiniSim({ kind, lang = 'en', href, title, idPrefix = 'm'
 /** Valeur d'un champ telle que le lecteur la lit : libellé de l'option choisie, ou nombre et unité. */
 export function valeurAffichee(i: MiniInput, x: number): string {
   if (i.options) return i.options.find((o) => o.value === String(x))?.label ?? String(x);
-  return `${formatNumber(x, Number.isInteger(x) ? 0 : (i.decimals ?? 0))}${i.unit ? `\u00a0${i.unit}` : ''}`;
+  const nb = formatNumber(x, Number.isInteger(x) ? 0 : (i.decimals ?? 0));
+  if (i.unit === '$' || i.unit === '£') return `${i.unit}${nb}`; // « $1,210 », never « 1,210 $ » (naive testers, 2026-11-14)
+  return `${nb}${i.unit ? `\u00a0${i.unit}` : ''}`;
 }

@@ -43,10 +43,10 @@
   "doctorate": 60
  },
  "defaults": {
-  "creditsPerTerm": 12,
+  "creditsPerTerm": 15,
   "termsPerYear": 2,
   "creditsPerYearFullTime": 30,
-  "note": "Calculator assumptions, not data: 12 credits a term over two terms is a common part-time-to-full-time pace for working adults; 30 credits is the full-time year used to spread required annual fees over credits. The reader changes them."
+  "note": "Calculator assumptions, not data: 15 credits a term over two terms is the pace that finishes a 120-credit bachelor's in four years, the length readers expect and the one every table of the site uses (4 years of fees); 12 credits a term is the usual full-time floor. 30 credits is the full-time year used to spread required annual fees over credits. The reader changes them. Was 12 until 2026-11-14: the calculator then said 5 years and $39,410 while the table under it said 4 years and $38,200 (naive testers)."
  },
  "sources": {
   "ipeds_use": {
