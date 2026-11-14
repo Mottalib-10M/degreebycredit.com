@@ -87,17 +87,17 @@ describe('1. one reference count of colleges', () => {
     expect(desc).not.toMatch(/your state/i);
     expect(text(html)).toContain(`${n0(NAT.nOnline)} online colleges`);
   });
-  it.runIf(existsSync('dist/en'))('the whole federal list (all formats) is only printed with its population named', () => {
-    const all = n0(NAT.n);
-    for (const p of ['index.html', 'online-colleges-that-accept-fafsa/index.html', 'method/index.html', 'cost-per-credit-hour/index.html']) {
-      const t = text(readFileSync(`dist/en/${p}`, 'utf8'));
-      let i = t.indexOf(all);
-      while (i >= 0) {
-        expect(t.slice(i, i + 160), `${p}: ${all} without its population`).toMatch(/online or not|whole federal list/);
-        i = t.indexOf(all, i + 1);
-      }
+  // Tour 4: one count of colleges everywhere (editor, 2026-11-14): neither the whole federal list nor the subset with
+  // a price per credit is printed, only the online colleges, the count of the title.
+  it.runIf(existsSync('dist/en'))('only one count of colleges is printed: the online colleges of the title', () => {
+    const others = [n0(NAT.n), n0(NAT.nQ)];
+    const files = ['dist/llms.txt', ...['index.html', 'online-colleges-that-accept-fafsa/index.html', 'method/index.html', 'cost-per-credit-hour/index.html', 'affordable-online-colleges/index.html'].map((p) => `dist/en/${p}`)];
+    for (const f of files.filter(existsSync)) {
+      const t = text(readFileSync(f, 'utf8'));
+      for (const x of others) expect(t.includes(x), `${f}: ${x} printed`).toBe(false);
     }
   });
+
 });
 
 describe('2. every national median is read on the online colleges', () => {
@@ -153,5 +153,42 @@ describe('6. cheapest online colleges: prices that multiply, intro and calculato
     const c = CHEAP_B[0];
     expect(t).toContain(`${c.n} (${STATES[c.st].name}) comes first at ${formatMoney(c.eff ?? 0, 2)} a credit with fees`);
     expect(t).toContain(`only ${Math.round((c.om8 ?? 0) * 100)}% of its students finish`);
+  });
+});
+
+/* Tour 4 (naive testers, 2026-11-14): “Lowest four-year university” for California was University of Massachusetts
+   Global at $517.33, because the state filter kept only universities with a per-credit charge and every Cal State and
+   UC campus bills one yearly price. The filter now counts that yearly price over 30 credits. */
+describe('7. lowest four-year public university of a state', () => {
+  type C = { u: number; st: string; ctrl: number; cat: number | null; exc: number | null; h2: number | null; t2: number | null; f2: number | null };
+  const all = COLLEGES as unknown as C[];
+  const eff4 = (c: C) => (c.h2 ? c.h2 + (c.f2 ?? 0) / 30 : c.t2 && c.t2 > 0 ? (c.t2 + (c.f2 ?? 0)) / 30 : null);
+  it.each(Object.keys(STATES))('%s: a public four-year university of the state, none cheaper, flat yearly prices included', (st) => {
+    const pick = (STATES as Record<string, { cheapest4: { u: number; eff: number } | null }>)[st].cheapest4;
+    const pool = all.filter((c) => c.st === st && c.ctrl === 1 && c.cat === 2 && (c.exc ?? 0) >= 50 && eff4(c) != null);
+    if (!pick) { expect(pool).toHaveLength(0); return; }
+    const c = all.find((x) => x.u === pick.u)!;
+    expect([c.st, c.ctrl, c.cat]).toEqual([st, 1, 2]);
+    expect(pick.eff).toBeCloseTo(eff4(c)!, 1);
+    for (const o of pool) expect(eff4(o)! + 0.01).toBeGreaterThanOrEqual(pick.eff);
+  });
+  it('California opens on a Cal State or UC campus, not University of Massachusetts Global', () => {
+    const out = getSpec('cheap-pick').run({ ...defaults('cheap-pick'), st: STATES_B.findIndex((s) => s.code === 'CA') }, {});
+    const row = out.rows.find(([l]) => /four-year/.test(l))?.[1] ?? '';
+    expect(row).not.toMatch(/Massachusetts/);
+    expect(row).toMatch(/^California (State|Polytechnic)|^University of California|^San |^Sonoma/);
+    expect(row).toMatch(/, CA\)/);
+  });
+});
+
+/* Tour 4 (editor, 2026-11-14): one reference price at the top of a page, and who it applies to. */
+describe('8. one reference price at the top', () => {
+  it.each(['affordable-online-colleges', 'cost-per-credit-hour'])('%s: the intro gives the public resident price, not the all-college median', async (id) => {
+    const { PAGES } = await import('../src/lib/guides');
+    const p = PAGES.find((x) => x.id === id)!;
+    expect(p.intro).toContain(`${m(NAT.medPub4)} a credit`);
+    expect(p.intro).toMatch(/state resident at a public university/);
+    expect(p.intro).not.toContain(m(NAT.q[50]));
+    expect(p.intro).not.toContain(m(NAT.medNpf4));
   });
 });

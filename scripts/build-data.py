@@ -136,6 +136,14 @@ def main():
             return None
         return round(r['h2'] + (r['f2'] or 0) / 30, 2)
 
+    def eff4(r):
+        """Like eff, but a university with one yearly price and no per-credit charge counts at that price over 30 credits."""
+        if r.get('h2'):
+            return eff(r)
+        if not r.get('t2') or r['t2'] <= 0:
+            return None
+        return round((r['t2'] + (r['f2'] or 0)) / 30, 2)
+
     def state_block(code):
         """Per-state figures; `cheapest` = lowest per-credit charge plus fees spread over 30 credits."""
         L = [r for r in colleges if r['st'] == code]
@@ -149,7 +157,11 @@ def main():
         pub_all = [r for r in L if r['ctrl'] == 1 and r['h2']]
         # Among public colleges with 50+ fully online students; four-year = primarily baccalaureate (INSTCAT 2).
         cheapest = min(pub, key=eff) if pub else None
-        cheapest4 = min([r for r in pub if r['cat'] == 2], key=eff, default=None)
+        # Four-year line: flat-priced universities count too, at their yearly price over 30 credits. Requiring a
+        # per-credit charge left out every Cal State and UC campus, so California's "lowest four-year university" was
+        # University of Massachusetts Global at $517.33 (naive testers, 2026-11-14, tour 4; tests/coherence.test.ts).
+        pub4 = [r for r in online if r['ctrl'] == 1 and r['cat'] == 2 and eff4(r) is not None]
+        cheapest4 = min(pub4, key=eff4, default=None)
         largest = online[0] if online else None
         prem = [r['h3'] - r['h2'] for r in pub if r['h3'] and r['h2'] and r['h3'] >= r['h2']]
         om = [r['om8'] for r in online if r['om8'] is not None]
@@ -161,7 +173,7 @@ def main():
             'medPub': median([r['h2'] for r in pub]), 'medPub4': median([r['h2'] for r in pub if r['lvl'] == 1]), 'nPub4': len([r for r in pub if r['lvl'] == 1]), 'medPub2': median([r['h2'] for r in pub if r['lvl'] == 2]), 'medNpf': median([r['h2'] for r in npf]), 'medFp': median([r['h2'] for r in fp]),
             'medGrad': median([r['h6'] for r in online if r['h6']]),
             'cheapest': {'u': cheapest['u'], 'n': cheapest['n'], 'h2': cheapest['h2'], 'f2': cheapest['f2'], 'eff': eff(cheapest), 'lvl': cheapest['lvl'], 'om8': cheapest['om8']} if cheapest else None,
-            'cheapest4': {'u': cheapest4['u'], 'n': cheapest4['n'], 'h2': cheapest4['h2'], 'f2': cheapest4['f2'], 'eff': eff(cheapest4), 'om8': cheapest4['om8']} if cheapest4 else None,
+            'cheapest4': {'u': cheapest4['u'], 'n': cheapest4['n'], 'city': cheapest4['city'], 'h2': cheapest4['h2'], 't2': None if cheapest4['h2'] else cheapest4['t2'], 'f2': cheapest4['f2'], 'eff': eff4(cheapest4), 'om8': cheapest4['om8']} if cheapest4 else None,
             'medEffPub': median([eff(r) for r in pub]),
             'largest': {'u': largest['u'], 'n': largest['n'], 'exc': largest['exc'], 'share': largest['share']} if largest else None,
             'medPremium': median(prem), 'nPremium': len(prem), 'nNoPremium': len([r for r in pub if r['h3'] and r['h2'] and r['h3'] == r['h2']]),

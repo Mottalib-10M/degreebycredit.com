@@ -44,7 +44,7 @@ const figures = [
   { fig: num(N.exc), what: `students studying fully online in ${P.ipeds.enrollmentTerm}, ${pc(shareOnline, 0)} of all college students` },
   // ONE reference count (naive testers, 2026-11-14, tour 3: 3,801, 2,530, 2,343 and 752 + 772 + 1,171 + 169 side by side).
   // Every median of the site is read on these online colleges; any other total names its population.
-  { fig: num(N.nOnline), what: `online colleges: those with at least 50 students fully online, all eligible for federal student aid. They are the colleges this site covers, and every median on it is theirs; ${num(N.nQ)} of them publish a price per credit` },
+  { fig: num(N.nOnline), what: `online colleges: those with at least 50 students fully online, all eligible for federal student aid. They are the colleges this site covers, and every median on it is theirs` },
   { fig: m(N.medPub4), what: `typical price per credit at the ${num(N.nPub4)} public universities among them, for residents of their state (median: half charge less, half more)` },
   { fig: `${num(E.finishers(100, N.medOm8Online))} of 100`, what: 'students at mostly online colleges who finished a degree or certificate within 8 years of starting' },
 ];
@@ -56,7 +56,7 @@ const faqs = [
   { q: 'Why does my school’s price differ from the median?', a: 'A median is the middle of all colleges of one type: half charge more, half charge less. Your school’s price also depends on your residence, your level, your program and the year, since most colleges raise tuition a little each year. Pick “I know my school’s price” in the calculator to use the real figure.' },
   { q: 'Do I need to give my e-mail or phone number?', a: 'No. There is no form and no account. Many sites about online degrees ask for your contact details and pass them to colleges that pay for them; this one does not. The calculators run in your browser and nothing you type leaves it.' },
 ];
-const resume = `An online degree is priced by the credit. Colleges that take federal student aid report their per-credit charge to IPEDS, the national survey of colleges run by the National Center for Education Statistics, and for ${P.ipeds.chargesYear} the median public university with online students charged its own residents ${m(N.medPub4)} a credit, against ${m(N.medPub4out)} for students from other states, ${m(N.medNpf4)} at private nonprofit universities and ${m(N.medFp4)} at for-profit ones. A bachelor’s degree asks for about 120 credits, an associate degree about 60 and a master’s 30 to 36, so the price per credit decides most of the bill. Required fees add a few hundred to a few thousand dollars a year, transfer credits come off the total, and grants such as the Pell Grant reduce what you pay. ${num(N.exc)} students, ${pc(shareOnline, 0)} of all college students, took every course at a distance in ${P.ipeds.enrollmentTerm}.`;
+const resume = `An online degree is priced by the credit. Colleges that take federal student aid report their per-credit charge to IPEDS, the national survey of colleges run by the National Center for Education Statistics, and for ${P.ipeds.chargesYear} the median public university with online students charged its own residents ${m(N.medPub4)} a credit: the one reference price of this site. Students from other states, private nonprofit universities and for-profit ones pay more, as the table below shows. A bachelor’s degree asks for about 120 credits, an associate degree about 60 and a master’s 30 to 36, so the price per credit decides most of the bill. Required fees add a few hundred to a few thousand dollars a year, transfer credits come off the total, and grants such as the Pell Grant reduce what you pay. ${num(N.exc)} students, ${pc(shareOnline, 0)} of all college students, took every course at a distance in ${P.ipeds.enrollmentTerm}.`;
 const jsonLd = [webApplicationSchema({ name: 'Online degree cost calculator', description: 'Tuition and fees of an online associate, bachelor’s or master’s degree from the per-credit charges US colleges report to IPEDS, with transfer credits, pace and grants.', path: route('home', lang), lang }), websiteSchema(lang), organizationSchema(lang), faqSchema(faqs, lang)];
 const groups = GROUPS_ORDER.map((g) => ({ g, pages: PAGES.filter((p) => p.group === g) })).filter((x) => x.pages.length);
 // Title and description say what the page shows: the 2,530 online colleges of the “Four numbers” block, no state field.
@@ -83,7 +83,9 @@ const title = `Online Degree Cost 2026: Prices at ${num(N.nOnline)} Online Colle
     <h2>Online degree cost by type of school</h2>
     <p>The type of college sets the rough price before anything else. The table gives the median per-credit charge of each type, its median yearly fees, and what that comes to for a 120-credit bachelor’s with {num(yearsAtPace)} years of fees, at {num(PACE.creditsPerTerm)} credits a term, the same pace and the same totals as the calculator above. It is the full listed price: grants and transfer credits come off it, and room and board are not part of an online student’s bill.</p>
     <Fragment set:html={h.table(['Type of university', 'Per credit', 'Fees per year', `120 credits, ${num(yearsAtPace)} years of fees`], types, `Medians of the ${P.ipeds.chargesYear} charges reported to IPEDS by the four-year colleges among the ${num(N.nOnline)} online colleges. Undergraduate per-credit charge for part-time students; required fees for full-time students.`, ['l', 'r', 'r', 'r'])} />
+    <details class="my-3"><summary class="cursor-pointer font-medium text-accent-700">Community colleges: a lower price, up to the associate degree</summary>
     <p>Community colleges are cheaper still: a median of {m(N.medPub2d)} a credit for residents of their district and {m(N.medPub2)} for the rest of the state, which is why many students take their first 60 credits there. The <a href={route('online-associates-degree', lang)}>associate degree page</a> shows what that route saves on a bachelor’s.</p>
+    </details>
 
     <h2>Five steps to a budget you can trust</h2>
     <p><strong>1. Count the credits you still need.</strong> The program sheet gives the total; your transcript gives what you have. Credits from an earlier college, from exams such as CLEP (the College-Level Examination Program) or from military training may count, and every accepted credit is one you do not pay for again.</p>
@@ -98,11 +100,13 @@ const title = `Online Degree Cost 2026: Prices at ${num(N.nOnline)} Online Colle
     <p>Size says nothing about price or results: the table holds both the cheapest and some of the most expensive per-credit prices on this site. The <a href={route('largest-online-universities', lang)}>largest online universities page</a> compares any two of the twenty largest in a calculator.</p>
 
     <h2>Where online students live and study</h2>
-    <p>Online students mostly enroll close to home, at their state’s public colleges, and in a few states with very large online universities. Ranked by the number of fully online students enrolled at the state’s colleges:</p>
+    <p>Online students mostly enroll close to home, at their state’s public colleges, and in a few states with very large online universities. The list below ranks the states by the number of fully online students enrolled at their colleges.</p>
+    <details class="my-3"><summary class="cursor-pointer font-medium text-accent-700">The eight states, with their own median price (community colleges included)</summary>
     <ul>
       {topStates.map((s) => <li><strong>{s.name}</strong>: {num(s.exc)} fully online students at {num(s.nOnline)} colleges; median price at its public colleges, community colleges included, {s.medPub ? m(s.medPub) : 'not reported'} a credit for residents.</li>)}
     </ul>
     <p>That state median counts every public college with online students that reports a price per credit, community colleges included, so it is not comparable with the {m(N.medPub4)} national median of public universities. Where the state universities charge one price per year instead of a price per credit, as in California, it is mostly the community colleges’ price.</p>
+    </details>
     <p>Utah and New Hampshire rank high only because Western Governors University and Southern New Hampshire University are based there; their students live everywhere. The <a href={route('online-colleges-by-state', lang)}>state page</a> covers all fifty states and the District of Columbia.</p>
 
     <h2>Finishing is part of the price</h2>

@@ -111,7 +111,7 @@ const SPECS: Record<string, MiniSpec> = {
         hyp: `Fees of ${m(v.fees)} a year spread over ${num(v.terms)} terms.`,
         // The share is read on tuition per credit, so it is labelled with that price, never next to the fees-included one
         // (naive tester 3, 2026-11-14: « 46% of 2,343 » under $379 fees included, against 49% at $300 on another page).
-        rows: [['One 3-credit course', m(3 * v.rate)], ['One year at this pace', m(year)], ['Real price per credit, fees included', m(eff)], [`Colleges charging ${m(v.rate)} a credit or less, before fees`, `${pct(share, 0)} of ${num(N.nQ)}`]],
+        rows: [['One 3-credit course', m(3 * v.rate)], ['One year at this pace', m(year)], ['Real price per credit, fees included', m(eff)], [`Online colleges charging ${m(v.rate)} a credit or less, before fees`, pct(share, 0)]],
         note: RATE_NOTE,
       };
     },
@@ -137,7 +137,8 @@ const SPECS: Record<string, MiniSpec> = {
           // Cents kept: $157 × 60 read as $9,420 against $9,392 printed (naive tester 2, 2026-11-14); $156.53 × 60 = $9,392.
           ['Lowest price per credit with fees', m2(a.eff)],
           [`Finished within 8 years at ${shortName(a.n)}`, a.om8 != null ? pct(a.om8, 0) : 'not reported'],
-          ['Lowest four-year university', b ? `${shortName(b.n)}, ${m2(b.eff)} a credit` : 'none reports a per-credit charge'],
+          // City and state named, and flat yearly prices counted (naive testers, 2026-11-14, tour 4: UMass Global under California).
+          ['Lowest four-year public university', b ? `${shortName(b.n)} (${b.city ? `${b.city}, ` : ''}${s.code}), ${m2(b.eff)} a credit${b.h2 ? '' : ` (one yearly price of ${m(b.t2 ?? 0)}, over 30 credits)`}` : 'none reports a price'],
           ['Same credits there', b ? m(b.eff * v.credits) : '—'],
         ],
         note: `Public colleges with 50 or more fully online students, prices for state residents. ${RATE_NOTE}`,
@@ -202,7 +203,7 @@ const SPECS: Record<string, MiniSpec> = {
         head: ['Highest price per credit you can pay', m(Math.floor(x))],
         hyp: `Assumes ${m(v.budget)} a month for 12 months, ${num(v.credits)} credits a year and ${m(v.fees)} of fees.`,
         alert: x <= 0 ? 'The fees alone take the whole budget: lower the credits per year or add a grant.' : undefined,
-        rows: [['Your year of study', m(12 * v.budget + v.grants)], [`Colleges charging ${m(Math.floor(Math.max(0, x)))} a credit or less, before fees`, `${pct(share, 0)} of ${num(N.nQ)}`], ['Median public university price for residents', m(N.medPub4)]],
+        rows: [['Your year of study', m(12 * v.budget + v.grants)], [`Online colleges charging ${m(Math.floor(Math.max(0, x)))} a credit or less, before fees`, pct(share, 0)], ['Median public university price for residents', m(N.medPub4)]],
         note: `Share read on the per-credit charges of colleges with 50 or more fully online students (${IPEDS}).`,
       };
     },
@@ -245,7 +246,7 @@ const SPECS: Record<string, MiniSpec> = {
       return {
         head: [`Saved with ${num(acc)} credits accepted`, m(s.dollars)],
         hyp: `Assumes ${m(v.rate)} a credit and terms of ${num(PACE.creditsPerTerm)} credits, the pace every calculator of this site starts from.`,
-        rows: [['Credits left to take', num(Math.max(0, v.program - acc))], ['Terms saved', formatNumber(s.terms, 1)], ['Credits not accepted', num(Math.max(0, v.earned - acc))]],
+        rows: [['Credits left to take', num(Math.max(0, v.program - acc))], ['Terms saved', formatNumber(s.terms, Number.isInteger(s.terms) ? 0 : 1)], ['Credits not accepted', num(Math.max(0, v.earned - acc))]],
         note: 'Each school decides which credits it accepts; the federal files say nothing about transfer policies.',
       };
     },
