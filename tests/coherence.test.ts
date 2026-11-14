@@ -60,3 +60,98 @@ describe('cheapest bachelor’s: intro = calculator', () => {
     expect(t).toContain(`${CHEAPEST4[0].n} comes to ${calc} for 120 credits`);
   });
 });
+
+/* Tour 3 (naive testers, 2026-11-14): one count, one population for every median, one pace, totals that multiply. */
+import { COLLEGES, STATES } from '../src/lib/data';
+import { PACE } from '../src/lib/pace';
+import { STATES_B, CHEAP_B } from '../src/lib/browser-data';
+import { formatNumber } from '../src/lib/format';
+
+const n0 = (x: number) => formatNumber(x, 0);
+const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); const k = s.length; return Math.round(k % 2 ? s[(k - 1) / 2] : (s[k / 2 - 1] + s[k / 2]) / 2); };
+const ONLINE = COLLEGES.filter((c) => (c.exc ?? 0) >= 50);
+
+describe('1. one reference count of colleges', () => {
+  it('the online colleges are the 50+ fully online ones, and the type counts add up to those with a price per credit', () => {
+    expect(NAT.nOnline).toBe(ONLINE.length);
+    expect(NAT.nQ).toBe(ONLINE.filter((c) => c.h2).length);
+    expect(NAT.nPub2 + NAT.nPub4 + NAT.nNpf4 + NAT.nFp4 + NAT.nPriv2).toBe(NAT.nQ);
+  });
+  const home = 'dist/en/index.html';
+  it.runIf(existsSync(home))('home title and description give the reference count, and promise no state field', () => {
+    const html = readFileSync(home, 'utf8');
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? '';
+    const desc = html.match(/name="description" content="([^"]*)"/)?.[1] ?? '';
+    expect(title).toContain(n0(NAT.nOnline));
+    expect(desc).toContain(n0(NAT.nOnline));
+    expect(desc).not.toMatch(/your state/i);
+    expect(text(html)).toContain(`${n0(NAT.nOnline)} online colleges`);
+  });
+  it.runIf(existsSync('dist/en'))('the whole federal list (all formats) is only printed with its population named', () => {
+    const all = n0(NAT.n);
+    for (const p of ['index.html', 'online-colleges-that-accept-fafsa/index.html', 'method/index.html', 'cost-per-credit-hour/index.html']) {
+      const t = text(readFileSync(`dist/en/${p}`, 'utf8'));
+      let i = t.indexOf(all);
+      while (i >= 0) {
+        expect(t.slice(i, i + 160), `${p}: ${all} without its population`).toMatch(/online or not|whole federal list/);
+        i = t.indexOf(all, i + 1);
+      }
+    }
+  });
+});
+
+describe('2. every national median is read on the online colleges', () => {
+  it('public university, nonprofit, for-profit and fee medians match a recount on the 50+ fully online colleges', () => {
+    const pick = (ctrl: number, lvl: number, k: 'h2' | 'h3' | 'f2') => ONLINE.filter((c) => c.ctrl === ctrl && c.lvl === lvl && c.h2 && c[k] != null).map((c) => c[k] as number);
+    expect(NAT.medPub4).toBe(median(pick(1, 1, 'h2')));
+    expect(NAT.medNpf4).toBe(median(pick(2, 1, 'h2')));
+    expect(NAT.medFp4).toBe(median(pick(3, 1, 'h2')));
+    expect(NAT.medFeePub4).toBe(median(pick(1, 1, 'f2')));
+    expect(NAT.q[50]).toBe(median(ONLINE.filter((c) => c.h2).map((c) => c.h2 as number)));
+  });
+  it('the share of colleges is labelled with the price it was read on, never with the fees-included price', () => {
+    const out = getSpec('credit-hour').run(defaults('credit-hour'), {});
+    const row = out.rows.find(([l]) => /or less/.test(l));
+    expect(row?.[0]).toContain(`${m(NAT.medPub4)} a credit or less, before fees`);
+  });
+  const home = 'dist/en/index.html';
+  it.runIf(existsSync(home))('state medians on the home page say community colleges are included', () => {
+    const t = text(readFileSync(home, 'utf8'));
+    const ca = STATES.CA.medPub;
+    expect(t).toMatch(/California\s*:/);
+    expect(t).toMatch(new RegExp(`community colleges included,? \\${m(ca ?? 0)} a credit`));
+  });
+});
+
+describe('3. one pace for every calculator', () => {
+  it('every undergraduate calculator starts at the site pace', () => {
+    const year = PACE.creditsPerTerm * PACE.termsPerYear;
+    expect(defaults('degree-cost').perTerm).toBe(PACE.creditsPerTerm);
+    expect(defaults('credit-hour').perTerm).toBe(PACE.creditsPerTerm);
+    expect(defaults('credit-hour').terms).toBe(PACE.termsPerYear);
+    expect(defaults('bachelor-pace').perTerm).toBe(PACE.creditsPerTerm);
+    expect(defaults('bachelor-pace').terms).toBe(PACE.termsPerYear);
+    expect(defaults('afford').credits).toBe(year);
+    expect(defaults('fafsa-grant').credits).toBe(year);
+    expect(getSpec('transfer').run(defaults('transfer'), {}).hyp).toContain(`terms of ${PACE.creditsPerTerm} credits`);
+  });
+});
+
+describe('6. cheapest online colleges: prices that multiply, intro and calculator on the same state', () => {
+  const page = 'dist/en/cheapest-online-colleges/index.html';
+  it('the calculator opens on the state of the college the intro names', () => {
+    expect(STATES_B[defaults('cheap-pick').st].code).toBe(CHEAP_B[0].st);
+  });
+  it.runIf(existsSync(page))('each “$X a credit with fees, so about $Y for 60 credits” holds: X × 60 = Y', () => {
+    const t = text(readFileSync(page, 'utf8'));
+    const hits = [...t.matchAll(/\$([\d,]+\.\d\d) a credit with fees, so about \$([\d,]+) for 60 credits/g)];
+    expect(hits.length).toBeGreaterThanOrEqual(5);
+    for (const [, x, y] of hits) expect(Math.round(Number(x.replace(/,/g, '')) * 60)).toBe(Number(y.replace(/,/g, '')));
+  });
+  it.runIf(existsSync(page))('the intro names the completion share of the cheapest college', () => {
+    const t = text(readFileSync(page, 'utf8'));
+    const c = CHEAP_B[0];
+    expect(t).toContain(`${c.n} (${STATES[c.st].name}) comes first at ${formatMoney(c.eff ?? 0, 2)} a credit with fees`);
+    expect(t).toContain(`only ${Math.round((c.om8 ?? 0) * 100)}% of its students finish`);
+  });
+});

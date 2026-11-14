@@ -1,5 +1,6 @@
 import { definePage } from '../../lib/guide-types';
-import { CHEAPEST, STATES } from '../../lib/data';
+import { CHEAPEST, STATES, stateName } from '../../lib/data';
+import { pct } from '../../lib/pct';
 import { formatMoney } from '../../lib/format';
 
 const $ = (n: number) => formatMoney(Math.round(n), 0);
@@ -18,7 +19,9 @@ export default definePage({
   title: 'Cheapest Online Colleges 2026: Lowest Price in Each State',
   description: 'Cheapest online colleges by state: the lowest public price per credit with fees, from federal IPEDS charges, and what 60 or 120 credits cost residents there.',
   h1: 'Cheapest online colleges: the lowest public price in every state',
-  intro: `The cheapest online colleges are public community colleges billing their own residents: among colleges with 500 or more fully online students, ${first ? `${first.n} in ${first.st} comes to ${$(first.eff ?? 0)} a credit with fees` : ''}. Pick your state to see its lowest price, fees included, and what your credits would cost there.`,
+  // Naive testers, 2026-11-14, tour 3: the intro named Lake Tahoe while the calculator opened on Texas, and its 11%
+  // completion went unsaid. The calculator now opens on this college's state and the intro gives its completion.
+  intro: `The cheapest online colleges are public community colleges billing their own residents. Among colleges with 500 or more fully online students, ${first ? `${first.n} (${stateName(first.st)}) comes first at ${formatMoney(first.eff ?? 0, 2)} a credit with fees${first.om8 != null ? `, but only ${pct(first.om8, 0)} of its students finish a degree or certificate there within 8 years` : ''}` : ''}. The calculator opens on ${first ? stateName(first.st) : 'that state'}: pick yours to see its lowest price, fees included.`,
   resume: (h) => {
     const caList = h.D.CHEAPEST.filter((c) => c.st === 'CA');
     const counts = new Map<number, number>();
@@ -35,8 +38,8 @@ export default definePage({
     { q: 'Do community colleges offer full degrees online?', a: `Many offer associate degrees and certificates fully online, and a growing number offer a few bachelor’s programs. The federal enrollment file counts students who take all their courses at a distance; the college’s catalog says which programs can be completed without coming to campus.` },
   ],
   body: (h) => {
-    const rows = Object.values(STATES).filter((s) => s.cheapest).sort((a, b) => (a.cheapest!.eff ?? 0) - (b.cheapest!.eff ?? 0)).map((s) => [s.name, h.B.name(s.cheapest!.n), h.m(s.cheapest!.h2 ?? 0), h.m(s.cheapest!.f2 ?? 0), h.m(s.cheapest!.eff ?? 0)]);
-    const top = h.D.CHEAPEST.slice(0, 10).map((c) => [h.B.name(c.n), c.st, h.m(c.eff ?? 0), h.m(c.h3 ?? 0), c.exc ?? 0, c.om8 != null ? h.pc(c.om8, 0) : 'n/a']);
+    const rows = Object.values(STATES).filter((s) => s.cheapest).sort((a, b) => (a.cheapest!.eff ?? 0) - (b.cheapest!.eff ?? 0)).map((s) => [s.name, h.B.name(s.cheapest!.n), h.m(s.cheapest!.h2 ?? 0), h.m(s.cheapest!.f2 ?? 0), h.m2(s.cheapest!.eff ?? 0)]);
+    const top = h.D.CHEAPEST.slice(0, 10).map((c) => [h.B.name(c.n), c.st, h.m2(c.eff ?? 0), h.m(c.h3 ?? 0), c.exc ?? 0, c.om8 != null ? h.pc(c.om8, 0) : 'n/a']);
     const none = Object.values(STATES).filter((s) => !s.cheapest).map((s) => s.name);
     const big5 = Object.values(STATES).filter((s) => s.cheapest).sort((a, b) => b.exc - a.exc).slice(0, 5);
     return `
@@ -46,12 +49,13 @@ ${h.table(['State', 'College', 'Tuition per credit', 'Fees per year', 'Per credi
 ${none.length ? `<p>${none.join(', ')}: no public college with 50 or more fully online students reports a per-credit charge.</p>` : ''}
 <h2>The national list: one state dominates</h2>
 <p>Across the country, the ten lowest prices among colleges with 500 or more fully online students are below. The out-of-state column, tuition alone without the fees, shows why the list helps residents only; where it looks lower than the resident column, the gap is the fees.</p>
-${h.table(['College', 'State', 'Resident, fees included', 'Out-of-state, tuition only', 'Fully online students', 'Finished within 8 years'], top, `Charges ${h.P.ipeds.chargesYear} (IPEDS); fully online students, ${h.P.ipeds.enrollmentTerm}; award rate of students who entered in ${h.P.scorecard.awardCohort} (College Scorecard).`, ['l', 'l', 'r', 'r', 'r', 'r'])}
+${h.table(['College', 'State', 'Resident, fees included', 'Out-of-state, tuition only', 'Fully online students', 'Finished within 8 years'], top, `Charges ${h.P.ipeds.chargesYear} (IPEDS); fully online students, ${h.P.ipeds.enrollmentTerm}; share who finished, among students who entered in ${h.P.scorecard.awardCohort} (College Scorecard).`, ['l', 'l', 'r', 'r', 'r', 'r'])}
 <h2>Before you pick the lowest price</h2>
+<p>The last column matters as much as the price. ${first && first.om8 != null ? `At ${h.B.name(first.n)}, ${h.pc(first.om8, 0)} of the students who entered in ${h.P.scorecard.awardCohort} held a degree or certificate from it eight years later; ` : ''}community college students often leave to work or move to a university before finishing, and those who transfer count as non-finishers here, so a low figure is common at the cheapest colleges. It still means many students paid for credits that did not end in an award.</p>
 <p>Three checks cost nothing. First, residency: the price is for residents of the state, and sometimes only of the college’s district. Second, the program: a low price helps only if the college offers your subject fully online. Third, the finish line: a share of students who never earn the award pay for credits that lead nowhere, which the ${h.a('online-college-graduation-rates', 'graduation rates page')} measures school by school.</p>
 <p>If the cheapest college near you is a community college, starting there and transferring later can cut the cost of a bachelor’s; the ${h.a('online-associates-degree', 'associate degree page')} works out the saving.</p><h2>Sixty credits at the lowest price in five large states</h2>
 <p>An associate degree of 60 credits, priced at the lowest public price with fees in the states with the most online students:</p>
-<ul>${big5.map((s) => `<li><strong>${s.name}</strong>: ${h.B.name(s.cheapest!.n)}, ${h.m(s.cheapest!.eff ?? 0)} a credit with fees, so about ${h.m((s.cheapest!.eff ?? 0) * 60)} for 60 credits.</li>`).join('')}</ul>
+<ul>${big5.map((s) => `<li><strong>${s.name}</strong>: ${h.B.name(s.cheapest!.n)}, ${h.m2(s.cheapest!.eff ?? 0)} a credit with fees, so about ${h.m((s.cheapest!.eff ?? 0) * 60)} for 60 credits.</li>`).join('')}</ul>
 <p>The same 60 credits at the national median public university price for residents, ${h.m(h.N.medPub4)} a credit before fees, would cost ${h.m(60 * h.N.medPub4)}. Starting at the cheapest college of your state and moving later to a university is the most common way to lower the price of a degree.</p>
 <p>One more detail matters at community colleges: many charge less to residents of their own district, the area whose property taxes fund them. The table uses the state resident price, so a student who lives in the district may pay less still. The calculator above uses the same state price; the district price, where the college has one, is on its tuition page.</p>
 `;

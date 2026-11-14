@@ -35,6 +35,8 @@ function Field({ id, label, value, onChange, unit, max = 1e9, decimals = 0, loca
   useLayoutEffect(() => { if (selectPending.current) { selectPending.current = false; input.current?.select(); } });
   const fmt = (n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: decimals }).format(n);
   const display = focused ? raw : (value === 0 ? '' : fmt(value));
+  // « 1,210 $ » reads as foreign to US readers (naive testers, 2026-11-14): $ and £ go before the figure.
+  const before = unit === '$' || unit === '£';
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-sm font-medium" style={{ color: C.text }}>{label}</label>
@@ -45,11 +47,11 @@ function Field({ id, label, value, onChange, unit, max = 1e9, decimals = 0, loca
           onFocus={() => { setRaw(value === 0 ? '' : String(value)); setFocused(true); selectPending.current = true; guard.current = true; }}
           onBlur={() => { guard.current = false; setFocused(false); if (value > max) onChange(max); }}
           aria-describedby={over ? `${id}-help` : undefined}
-          className="tabular-nums h-12 w-full rounded-lg border bg-white px-4 pr-14 text-right text-lg focus:outline-none focus:ring-2"
+          className={`tabular-nums h-12 w-full rounded-lg border bg-white px-4 ${unit ? (before ? 'pl-8' : 'pr-14') : ''} text-right text-lg focus:outline-none focus:ring-2`}
           style={{ borderColor: C.border, color: C.text }} />
-        {unit && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: C.muted }} aria-hidden="true">{unit}</span>}
+        {unit && <span className={`pointer-events-none absolute ${before ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-sm`} style={{ color: C.muted }} aria-hidden="true">{unit}</span>}
       </div>
-      {over && <p id={`${id}-help`} role="status" className="mt-1 text-xs font-medium" style={{ color: C.warn }}>≤ {fmt(max)}{unit ? ` ${unit}` : ''}</p>}
+      {over && <p id={`${id}-help`} role="status" className="mt-1 text-xs font-medium" style={{ color: C.warn }}>≤ {before ? unit : ''}{fmt(max)}{unit && !before ? ` ${unit}` : ''}</p>}
     </div>
   );
 }
@@ -73,7 +75,9 @@ export default function MiniSimAutonome({ kind, lang = 'en', href, locale = 'en-
   const visibles = spec.inputs.filter((i) => !locked.includes(i.id) && (!i.showIf || i.showIf(v)));
   const fixes = spec.inputs.filter((i) => locked.includes(i.id));
   const avances = visibles.filter((i) => i.avance);
-  const valeur = (i: MiniInput) => (i.options ? (i.options.find((o) => o.value === String(v[i.id]))?.label ?? '') : `${new Intl.NumberFormat(locale, { maximumFractionDigits: i.decimals ?? 0 }).format(v[i.id])}${i.unit ? `\u00a0${i.unit}` : ''}`);
+  const nombre = (i: MiniInput) => new Intl.NumberFormat(locale, { maximumFractionDigits: i.decimals ?? 0 }).format(v[i.id]);
+  const valeur = (i: MiniInput) => (i.options ? (i.options.find((o) => o.value === String(v[i.id]))?.label ?? '')
+    : i.unit === '$' || i.unit === '£' ? `${i.unit}${nombre(i)}` : `${nombre(i)}${i.unit ? `\u00a0${i.unit}` : ''}`);
   const suppose = exemple ?? exempleSuppose(spec.exemple, v);
   const lien: [string, string] | undefined = out.go ?? (href && spec.cta ? [`${spec.cta} →`, href] : undefined);
   const champ = (i: MiniInput) => (i.options

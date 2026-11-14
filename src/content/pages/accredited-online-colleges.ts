@@ -24,13 +24,14 @@ export default definePage({
   ],
   body: (h) => {
     const acc = h.D.NAT.accreditors.filter(([n]) => n !== 'NA').slice(0, 12).map(([n, c]) => [n, c]);
-    const big = h.D.FEATURED.slice(0, 10).map((f) => [h.B.name(f.n), f.accc ?? 'n/a', f.st]);
+    // Full agency names, never the codes (naive testers, 2026-11-14: « NCACHE » for the Higher Learning Commission).
+    const big = h.D.FEATURED.slice(0, 10).map((f) => [h.B.name(f.n), f.acc ?? 'not on file', f.st]);
     return `
 <h2>Accredited online colleges by accrediting agency</h2>
 <p>The agencies that accredit the most colleges with at least 50 fully online students. The first seven are the institutional accreditors once called “regional”; the others are national agencies for career schools, distance education or religious colleges, or agencies for a single field.</p>
 ${h.table(['Accrediting agency', 'Colleges with online students'], acc, `College Scorecard accreditor field, as of ${h.date(h.P.scorecard.accreditorAsOf)}; colleges with 50 or more fully online students in ${h.P.ipeds.enrollmentTerm}.`, ['l', 'r'])}
 <h2>Who accredits the largest online schools</h2>
-${h.table(['School', 'Accreditor', 'State'], big, 'Accreditor code as given by College Scorecard: NCACHE = Higher Learning Commission, SACSCC = Southern Association of Colleges and Schools Commission on Colleges, NECHE = New England Commission of Higher Education, MSACHE = Middle States Commission on Higher Education, NWCCU = Northwest Commission on Colleges and Universities, WASCSR = WASC Senior College and University Commission.', ['l', 'l', 'l'])}
+${h.table(['School', 'Accreditor', 'State'], big, `Accrediting agency as named by College Scorecard, ${h.date(h.P.scorecard.accreditorAsOf)}.`, ['l', 'l', 'l'])}
 <p>Online universities are accredited by the same agencies as campus universities, often the agency of the state where they are based.</p>
 <h2>What your transfer credits are worth</h2>
 <p>The calculator above multiplies the credits a college accepts by its price per credit. Thirty accepted credits at the median public price, ${h.m(h.N.medPub4)}, are worth ${h.m(30 * h.N.medPub4)} and a term or two less of study. Ask the new college for an unofficial transcript review before you enroll: many do it at no cost. Then compare the result with the ${h.a('online-bachelors-degree', 'pace calculator')} to see how many years are left.</p><h2>A worked example: 45 credits from an earlier college</h2>

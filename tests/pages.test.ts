@@ -9,7 +9,7 @@ import { helpers } from '../src/lib/helpers';
 import { getSpec } from '../src/lib/mini-specs';
 import { readFileSync } from 'node:fs';
 // Medians of the federal files never typed in a page (RECETTE §17.4): they come from h.N, h.D or h.P.
-const TYPED = /\$278\b|\$940\b|\$510\b|\$620\b|\$146\b|\$127\b|\$471\b|\$733\b|\$609\b|\$914\b|\$1,210\b|4,953,658|3,801\b|2,530\b/;
+const TYPED = /\$272\b|\$925\b|\$437\b|\$616\b|\$146\b|\$127\b|\$471\b|\$720\b|\$612\b|\$885\b|\$1,241\b|4,953,658|3,801\b|2,530\b|2,343\b/;
 
 const h = helpers(true);
 const text = (html: string) => html.replace(/<table[\s\S]*?<\/table>/g, ' ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/g, ' ');
