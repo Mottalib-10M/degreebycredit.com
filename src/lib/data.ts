@@ -57,3 +57,17 @@ export const inState = (code: string) => COLLEGES.filter((c) => c.st === code);
 /** Schools of a state with at least 50 fully online students, largest first. */
 export const onlineInState = (code: string) => inState(code).filter((c) => (c.exc ?? 0) >= 50).sort((a, b) => (b.exc ?? 0) - (a.exc ?? 0));
 export const accreditorOf = (c: Pick<College, 'acc'>) => (c.acc && c.acc !== 'NA' ? c.acc : null);
+
+// Programs that can be completed fully online, by field and level (IPEDS C2024DEP, scripts/build-programs.py).
+import programsRaw from '../data/programs.json';
+export type ProgLevel = 'cert' | 'assoc' | 'bach' | 'mast' | 'docr' | 'docp';
+export interface ProgRow { u: number; n: string; st: string; ctrl: number; lvl: number; p: number | null; po: number | null; pe: number | null; f2: number | null; exc: number | null; om8: number | null; k: number }
+export interface ProgMed { pub: number | null; pubOut: number | null; npf: number | null; fp: number | null; pubEff: number | null }
+export interface ProgLevelStats { nOffer: number; nOnline: number; nPub: number; nNpf: number; nFp: number; nPriced: number; nPrograms: number; nStates: number; med: ProgMed; cheapest: ProgRow[]; cheapestPub: ProgRow[]; most: ProgRow[]; states: Record<string, { n: number; nPub: number; low: { n: string; p: number } | null }> }
+export interface ProgField { levels: Partial<Record<ProgLevel, ProgLevelStats>> }
+export interface LawRow { u: number; n: string; st: string; ctrl: number; exc: number | null; t: number | null; f: number | null; to: number | null; h6: number | null }
+export const PROGRAMS = programsRaw as unknown as Record<'nursing' | 'mba' | 'accounting' | 'medassist' | 'healthadmin' | 'phd' | 'coding', ProgField> & {
+  law: ProgField & { tuition: { n: number; nPub: number; nNpf: number; medPub: number; medPubOut: number; medNpf: number; medFee: number }; online: LawRow[]; medOnline: number };
+  phd: ProgField & { families: Array<[string, number]> };
+  all: ProgField & { nAnyOnline: number; nAny: number; programsOnline: number; programs: number; byState: Record<string, [number, number]>; top: Array<{ u: number; n: string; st: string; ctrl: number; lvl: number; k: number; p: number; h2: number | null; h6: number | null; exc: number | null; om8: number | null }> };
+};

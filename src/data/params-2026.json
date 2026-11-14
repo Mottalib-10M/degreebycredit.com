@@ -39,7 +39,8 @@
   "bachelor": 120,
   "master": 36,
   "certificate": 24,
-  "note": "Typical program lengths used as calculator starting values only (associate about 60 semester credits, bachelor's about 120, master's 30 to 36): the catalog of each program sets the real number, which the reader types."
+  "note": "Typical program lengths used as calculator starting values only (associate about 60 semester credits, bachelor's about 120, master's 30 to 36, doctorate 60 as a round starting value since programs range widely): the catalog of each program sets the real number, which the reader types.",
+  "doctorate": 60
  },
  "defaults": {
   "creditsPerTerm": 12,
@@ -143,6 +144,39 @@
    "label": {
     "en": "College Scorecard data dictionary and cohort map (U.S. Department of Education)"
    }
+  },
+  "ipeds_c_dep": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/C2024DEP.zip",
+   "label": {
+    "en": "NCES, IPEDS C2024DEP: programs offered and programs that can be completed entirely via distance education, 2023-24, by CIP code (zip)"
+   }
+  },
+  "ipeds_c_dep_dict": {
+   "url": "https://nces.ed.gov/ipeds/datacenter/data/C2024DEP_Dict.zip",
+   "label": {
+    "en": "NCES, IPEDS C2024DEP dictionary: award levels and distance-education program counts (zip)"
+   }
+  },
+  "nces_cip": {
+   "url": "https://nces.ed.gov/ipeds/cipcode/Default.aspx?y=56",
+   "label": {
+    "en": "NCES, Classification of Instructional Programs (CIP 2020): the field codes used to group programs"
+   }
+  },
+  "calbar_directory": {
+   "url": "https://www.calbar.ca.gov/admissions/law-schools/law-schools-directory",
+   "label": {
+    "en": "State Bar of California, law schools directory: ABA-approved, California-accredited and registered unaccredited (correspondence, distance-learning) law schools, read on November 14, 2026"
+   }
   }
+ },
+ "programs": {
+  "file": "C2024DEP",
+  "completionsYear": "2023-24",
+  "release": "provisional release of September 2025",
+  "read": "2026-11-14",
+  "rule": "A college offers a program fully online at a level when the file counts at least one program of that field and level that can be completed entirely via distance education (…DE plus …DES greater than zero). Prices are the college's general per-credit charge of IC2023_AY (undergraduate for certificates, associate and bachelor's degrees, graduate for master's and doctorates); law: the yearly JD tuition and fees of IC2023_AY (ISPROF9, ISPFEE9, OSPROF9).",
+  "lawYears": 3,
+  "lawYearsNote": "Calculator starting value: three years is the usual full-time length of a JD; part-time programs take longer, and the school's catalog sets it."
  }
 }

@@ -6,7 +6,7 @@
 import type { MiniSpec, MiniInput } from './mini-types';
 import { P } from './engine/params';
 import * as E from './engine/degree';
-import { NATB as N, FEATURED_B, CHEAP4_B, STATES_B, shortName, sector } from './browser-data';
+import { NATB as N, FEATURED_B, CHEAP4_B, STATES_B, PROG_B, shortName, sector } from './browser-data';
 import metaRaw from '../data/data-meta.json';
 import { formatMoney as fm, formatNumber } from './format';
 import { pct } from './pct';
@@ -371,6 +371,99 @@ const SPECS: Record<string, MiniSpec> = {
         note: `${RATE_NOTE} Award rate: students who started in 2017-18, 8 years later (College Scorecard).`,
       };
     },
+  },
+};
+
+/* Online programs by field (IPEDS C2024DEP): one calculator per field, the same engine as the degree calculator,
+   with the median charge of the colleges that offer that field fully online at the chosen level. */
+const LEVEL_NAME: Record<string, string> = { cert: 'certificate', assoc: 'associate degree', bach: 'bachelor’s degree', mast: 'master’s degree', docr: 'research doctorate (PhD)', docp: 'professional doctorate' };
+const LEVEL_CREDITS: Record<string, number> = { cert: P.credits.certificate, assoc: P.credits.associate, bach: P.credits.bachelor, mast: P.credits.master, docr: P.credits.doctorate, docp: P.credits.doctorate };
+const DEP = `IPEDS ${P.programs.file}, ${P.programs.completionsYear}`;
+interface FieldCfg { key: string; field: string; title: string; exemple: string; cta: string; ctaPage: string; levels: string[]; main: string; levelLabel?: Record<string, string>; creditsHelp: string; transferHelp: string }
+function progSpec(c: FieldCfg): MiniSpec {
+  const F = PROG_B[c.key];
+  const lv = (v: Record<string, number>) => (c.levels.length > 1 ? c.levels[v.level] : c.levels[0]) ?? c.main;
+  const lvName = (l: string) => c.levelLabel?.[l] ?? LEVEL_NAME[l];
+  return {
+    title: c.title, exemple: c.exemple, cta: c.cta, ctaPage: c.ctaPage,
+    inputs: [
+      ...(c.levels.length > 1 ? [{ id: 'level', label: 'Level', def: Math.max(0, c.levels.indexOf(c.main)), options: opt(c.levels.map((l) => `${lvName(l).charAt(0).toUpperCase()}${lvName(l).slice(1)} (${num(F.levels[l]?.n ?? 0)} colleges)`)) }] : []),
+      { id: 'st', label: 'Your state', def: TX, options: opt(STATES_B.map((s) => s.name)) },
+      { id: 'sector', label: 'Type of school', def: 0, options: SECTOR_OPTS, help: 'Not sure? Keep “Public, in my state”: the median charge of the public colleges that offer this program fully online.' },
+      { ...money('rate', 'Your program’s price per credit', N.medPub4, 'On the program’s tuition page, “per credit hour”.'), showIf: (v) => v.sector === 4 },
+      ...c.levels.map((l, i): MiniInput => ({ id: `cr${i}`, label: `Credits in the ${lvName(l).replace(/ \(.*\)$/, '')}`, def: LEVEL_CREDITS[l], max: 200, help: c.creditsHelp, ...(c.levels.length > 1 ? { showIf: (v: Record<string, number>) => (v.level ?? 0) === i } : {}) })),
+      count('transfer', 'Credits you already have (transfer)', 0, 200, c.transferHelp, true),
+      money('grants', 'Grants or employer help per year', 0, 'Money you do not repay. Not sure? Leave 0.', true),
+      count('perYear', 'Credits per year', 18, 40, '18 credits is two courses in each of three terms.', true),
+    ],
+    run: (v, touched = {}) => {
+      const l = lv(v);
+      const L = F.levels[l];
+      const s = STATES_B[v.st] ?? STATES_B[TX];
+      const here = L?.st[s.code];
+      const md = L?.med;
+      const rate = v.sector === 4 ? v.rate : v.sector === 0 ? md?.pub : v.sector === 1 ? md?.pubOut : v.sector === 2 ? md?.npf : md?.fp;
+      const credits = v[`cr${Math.max(0, c.levels.indexOf(l))}`] ?? LEVEL_CREDITS[l];
+      const what = ['public price for residents', 'public price for out-of-state students', 'private nonprofit price', 'for-profit price', ''][v.sector] ?? '';
+      if (!rate) return { head: [`${c.field}, ${lvName(l)}: no median for this type of school`, '—'], rows: [], note: `No college of this type offering it fully online reports a per-credit charge (${IPEDS}).` };
+      const r = E.degreeCost({ perCredit: rate, credits, transfer: v.transfer, feesPerYear: 0, creditsPerTerm: v.perYear, termsPerYear: 1, grantsPerYear: v.grants });
+      const rows: Array<[string, string]> = [
+        [`${num(r.remaining)} credits × ${m(rate)}`, m(r.tuition)],
+        ...(r.grants ? [['Grants and employer help', `− ${m(r.grants)}`] as [string, string]] : []),
+        ['Time to finish at your pace', yrs(Math.round(r.yearsExact * 10) / 10)],
+        [`Colleges in ${s.name} offering it fully online`, here ? num(here[0]) : 'none in the file'],
+        [`Lowest public price in ${s.name}${l === 'mast' || l.startsWith('doc') ? '' : ', fees included'}`, here && here[1] && here[2] ? `${m(here[2])} a credit, ${shortName(here[1])}` : 'no public college reports one'],
+        ['Colleges offering it fully online, whole country', num(L?.n ?? 0)],
+      ];
+      return {
+        head: [`Online ${c.field.toLowerCase()} ${lvName(l)}: tuition${r.grants ? ' after grants' : ''}`, m(r.net)],
+        hyp: v.sector === 4 ? `Assumes your price of ${m(rate)} a credit, fees not counted.` : `Assumes the median ${what} at colleges offering it fully online, ${m(rate)} a credit (${IPEDS}).`,
+        alert: 'Required and program fees are not counted: add them from the school’s tuition page.',
+        rows, note: `Programs that can be completed entirely online: ${DEP}. ${RATE_NOTE}`,
+      };
+    },
+  };
+}
+const FIELD_CFG: FieldCfg[] = [
+  { key: 'nursing', field: 'Nursing', title: 'Online nursing program: tuition at the colleges that offer it', exemple: 'Example: a bachelor’s in nursing at the public median, Texas', cta: 'Online master’s degree prices', ctaPage: 'online-masters-degree', levels: ['assoc', 'bach', 'mast', 'docp'], main: 'bach', levelLabel: { assoc: 'associate degree (ADN)', bach: 'bachelor’s (BSN, mostly RN to BSN)', mast: 'master’s (MSN)', docp: 'doctorate (DNP)' }, creditsHelp: 'The program sheet gives the total. An RN to BSN counts your earlier nursing credits: type them as transfer credits.', transferHelp: 'Credits from your associate degree or diploma that the school accepts.' },
+  { key: 'mba', field: 'MBA', title: 'Online MBA: tuition at the median graduate price', exemple: 'Example: 36 credits at the public median, Texas', cta: 'Online master’s degree prices', ctaPage: 'online-masters-degree', levels: ['mast'], main: 'mast', creditsHelp: 'Many MBAs ask for 30 to 48 credits: read the program sheet.', transferHelp: 'Graduate credits the school accepts, often capped at a few courses.' },
+  { key: 'accounting', field: 'Accounting', title: 'Online accounting degree: what it costs at your level', exemple: 'Example: a bachelor’s at the public median, Texas', cta: 'Cheapest online bachelor’s degrees', ctaPage: 'cheapest-online-bachelors-degree', levels: ['cert', 'assoc', 'bach', 'mast'], main: 'bach', creditsHelp: 'A bachelor’s is about 120 credits. For the CPA, your state board of accountancy sets the credit hours it asks for.', transferHelp: 'Credits from an earlier college that the school accepts.' },
+  { key: 'medassist', field: 'Medical assistant', title: 'Online medical assistant program: tuition by state', exemple: 'Example: a certificate at the public median, Texas', cta: 'Online associate degree prices', ctaPage: 'online-associates-degree', levels: ['cert', 'assoc'], main: 'cert', creditsHelp: 'Certificates run from under 20 to more than 40 credits: read the program sheet.', transferHelp: 'Credits from an earlier college that the school accepts.' },
+  { key: 'healthadmin', field: 'Healthcare administration', title: 'Masters in healthcare administration: tuition by school type', exemple: 'Example: a master’s at the public median, Texas', cta: 'Online master’s degree prices', ctaPage: 'online-masters-degree', levels: ['bach', 'mast', 'docr'], main: 'mast', creditsHelp: 'Master’s programs in this field ask for about 36 to 60 credits: read the program sheet.', transferHelp: 'Graduate credits the school accepts.' },
+  { key: 'phd', field: 'Doctoral', title: 'Online PhD: tuition at the median graduate price', exemple: 'Example: 60 credits at the public median, Texas', cta: 'Online master’s degree prices', ctaPage: 'online-masters-degree', levels: ['docr'], main: 'docr', creditsHelp: '60 is a round starting value: doctoral programs range widely, and the program sheet gives the real number.', transferHelp: 'Credits from a master’s degree that the program accepts.' },
+  { key: 'coding', field: 'Medical billing and coding', title: 'Medical billing and coding online program: tuition', exemple: 'Example: a certificate at the public median, Texas', cta: 'Online associate degree prices', ctaPage: 'online-associates-degree', levels: ['cert', 'assoc'], main: 'cert', creditsHelp: 'Certificates run from about 15 to more than 40 credits: read the program sheet.', transferHelp: 'Credits from an earlier college that the school accepts.' },
+  { key: 'all', field: 'College', title: 'An online program at the colleges that offer it', exemple: 'Example: a bachelor’s at the public median, Texas', cta: 'Online colleges by state', ctaPage: 'online-colleges-by-state', levels: ['cert', 'assoc', 'bach', 'mast', 'docr', 'docp'], main: 'bach', creditsHelp: 'An associate degree is about 60 credits, a bachelor’s about 120, a master’s 30 to 36.', transferHelp: 'Credits from an earlier college that the school accepts.' },
+];
+for (const c of FIELD_CFG) SPECS[`prog-${c.key}`] = progSpec(c);
+const LAW = PROG_B.law;
+const LAW_ONLINE = (LAW.online ?? []).filter((r) => (r.t ?? 0) >= 5000);
+SPECS['law-jd'] = {
+  title: 'A JD with online study: tuition and fees for the whole degree',
+  exemple: 'Example: the median of law schools with an online JD, three years',
+  cta: 'Online master’s degree prices', ctaPage: 'online-masters-degree',
+  inputs: [
+    { id: 'school', label: 'Law school', def: -1, options: [{ value: '-1', label: 'Median of law schools with an online JD' }, { value: '-2', label: 'Median of all public law schools, residents' }, { value: '-3', label: 'Median of all private nonprofit law schools' }, ...LAW_ONLINE.map((r, i) => ({ value: String(i), label: `${shortName(r.n)} (${r.st})` }))] },
+    { id: 'years', label: 'Years to finish', def: P.programs.lawYears, max: 6, help: 'Three years is usual full time; part-time and online programs often take four.' },
+    { id: 'res', label: 'You live', def: 0, options: opt(['In the school’s state', 'In another state']) },
+    money('grants', 'Scholarship per year', 0, 'From the school’s offer. Not sure? Leave 0.', true),
+  ],
+  run: (v, touched = {}) => {
+    const med = LAW.tuition!;
+    const onl = LAW_ONLINE.map((r) => r.t ?? 0).sort((a, b) => a - b);
+    const mOnl = onl.length ? (onl.length % 2 ? onl[(onl.length - 1) / 2] : (onl[onl.length / 2 - 1] + onl[onl.length / 2]) / 2) : 0;
+    const r = v.school >= 0 ? LAW_ONLINE[v.school] : null;
+    const tuition = r ? (v.res === 1 ? r.to ?? r.t ?? 0 : r.t ?? 0) : v.school === -2 ? (v.res === 1 ? med.medPubOut : med.medPub) : v.school === -3 ? med.medNpf : mOnl;
+    const fee = r ? r.f ?? 0 : med.medFee;
+    const who = r ? shortName(r.n) : v.school === -2 ? 'Public law schools, median' : v.school === -3 ? 'Private nonprofit law schools, median' : 'Law schools with an online JD, median';
+    const years = Math.max(1, Math.min(6, v.years));
+    const total = Math.max(0, years * (tuition + fee - v.grants));
+    return {
+      head: [`${who}: JD tuition and fees, ${yrs(years)}`, m(total)],
+      hyp: `Assumes ${m(tuition)} of tuition and ${m(fee)} of required fees a year (${IPEDS}, law program).`,
+      alert: 'IPEDS does not record bar admission rules: a JD from a law school without ABA approval may not let you sit the bar exam outside its state.',
+      rows: [['Tuition per year', m(tuition)], ['Required fees per year', m(fee)], ['Scholarship', v.grants ? `− ${m(v.grants * years)}` : 'none typed'], ['Law schools reporting a JD price', num(med.n)]],
+      note: `Yearly JD tuition and fees reported to IPEDS for ${P.ipeds.chargesYear}; online JD: ${DEP}.`,
+    };
   },
 };
 

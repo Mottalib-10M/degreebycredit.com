@@ -5,7 +5,7 @@
 import type { SourceKey } from './engine/params';
 import type { Helpers } from './helpers';
 
-export type Group = 'cost' | 'degree' | 'choose';
+export type Group = 'program' | 'cost' | 'degree' | 'choose';
 export interface FAQ { q: string; a: string }
 /** Tools: `mini:<spec>`, a spec of `lib/mini-specs.ts`. */
 export interface ToolDef { kind: string; props?: Record<string, string | number | boolean> }

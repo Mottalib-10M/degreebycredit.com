@@ -31,3 +31,9 @@ export const shortName = (name: string) => name
   .replace(/-(Arizona|Illinois|Colorado Springs|Global Region)$/, '');
 export const SECTOR = ['public', 'private nonprofit', 'private for-profit'];
 export const sector = (ctrl: number) => SECTOR[ctrl - 1] ?? 'unknown sector';
+
+/** Programs that can be completed fully online, by field and level: national medians and, per state, the number of
+ *  colleges and the lowest public price (IPEDS C2024DEP with IC2023_AY charges, scripts/build-programs.py). */
+import progRaw from '../data/programs-b.json';
+export interface ProgLevelB { n: number; nPub: number; med: { pub: number | null; pubOut: number | null; npf: number | null; fp: number | null; pubEff: number | null }; st: Record<string, [number, string | null, number | null]> }
+export const PROG_B = progRaw as unknown as Record<string, { levels: Record<string, ProgLevelB>; byState?: Record<string, [number, number]>; tuition?: { n: number; medPub: number; medPubOut: number; medNpf: number; medFee: number }; online?: Array<{ n: string; st: string; ctrl: number; t: number | null; f: number | null; to: number | null }> }>;
