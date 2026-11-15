@@ -7,6 +7,7 @@
  */
 import PageLayout from '../layouts/PageLayout.astro';
 import Tool from './Tool.astro';
+import CollegeLookup from './calc/CollegeLookup';
 import Sources from './Sources.astro';
 import Clamp from './Clamp.astro';
 import { route } from '../i18n/routes';
@@ -68,6 +69,7 @@ const title = `Online Degree Cost 2026: Prices at ${num(N.nOnline)} Online Colle
     <p class="mt-2 text-base text-navy-700 sm:text-lg">Online degree cost is the price per credit times the credits you still need. A credit is about one hour of class a week for one term; a bachelor’s degree takes about {num(B120)}. At a public university of your own state, at the typical (median) {m(N.medPub4)} a credit, a bachelor’s comes to about {m(bach.net)} with {num(yearsAtPace)} years of required fees. Nothing you type is sent.</p>
     <p class="mt-1 text-xs text-navy-600">Independent site: not a college, not a lead seller, not affiliated with the U.S. Department of Education or any school named.</p>
   </header>
+  <div class="mb-3"><CollegeLookup client:load count={N.nOnline} /></div>
   <div data-outil class="mb-4"><Tool tool={{ kind: 'mini:degree-cost' }} primary={true} /></div>
   <Clamp text={resume} id="clamp-home" lang={lang} class="mb-3" />
   <p class="mb-6 text-sm text-navy-600">Federal files read on {h.read} · {AUTHOR_NAME} · <a href={route('method', lang)} class="underline hover:text-navy-900">How the figures are built</a> · <a href={route('about', lang)} class="underline hover:text-navy-900">Who publishes this site</a></p>

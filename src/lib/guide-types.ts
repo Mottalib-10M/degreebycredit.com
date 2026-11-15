@@ -17,6 +17,8 @@ export interface PageDef {
   /** Main tool, first screen: the page is a tool page (`data-outil`, 500 words or more). */
   tool?: ToolDef;
   mini?: ToolDef;
+  /** "Find your college" field above the main tool, with the accreditor (CollegeLookup.tsx). */
+  lookup?: boolean;
   related: string[];
   sources: SourceKey[];
   slug: string;

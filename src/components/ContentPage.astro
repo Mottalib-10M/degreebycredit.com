@@ -8,6 +8,8 @@
 import PageLayout from '../layouts/PageLayout.astro';
 import Clamp from './Clamp.astro';
 import Tool from './Tool.astro';
+import CollegeLookup from './calc/CollegeLookup';
+import { NAT } from '../lib/data';
 import { route, ROUTES } from '../i18n/routes';
 import { label, groupLabel } from '../i18n/nav';
 import { t } from '../i18n/ui';
@@ -44,6 +46,7 @@ for (let i = 0; i < parts.length; i += 3) { chunks.push({ html: parts[i] }); if 
       <p class="mt-1 text-xs text-navy-600">Independent site: not a college, not a lead seller, not affiliated with the U.S. Department of Education or any school named.</p>
     </header>
     {page.avantOutil && <p class="mb-3 rounded-md border-l-4 border-accent-600 bg-accent-50 px-3 py-1 text-sm font-semibold text-navy-900 [&_a]:text-accent-700 [&_a]:underline" set:html={page.avantOutil(h)} />}
+    {page.lookup && <div class="mb-3"><CollegeLookup client:load count={NAT.nOnline} showAccreditor={true} /></div>}
     {page.tool && <div data-outil class="mb-4"><Tool tool={page.tool} primary={true} /></div>}
     {page.apresOutil && <div class="mb-4 border-l-4 border-accent-500 bg-accent-50 p-4 text-navy-900 [&_a]:font-medium [&_a]:text-accent-700 [&_a]:underline" set:html={page.apresOutil(h)} />}
     <Clamp text={page.resume(h)} id={`clamp-${page.id}`} lang={lang} class="mb-3" />
